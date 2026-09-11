@@ -18,6 +18,8 @@
 #include "OBDState.h"
 
 #include <ExprParser.h>
+#include <cctype>
+#include <cstdlib>
 
 #include "obd.h"
 
@@ -27,6 +29,48 @@ void *OBDState::operator new(const size_t size) {
 
 void OBDState::operator delete(void *ptr) {
     heap_caps_free(ptr);
+}
+
+static bool parsePidPayload(const char *payload,
+                            const uint8_t service,
+                            const uint16_t pid,
+                            const uint8_t numExpectedBytes,
+                            uint64_t &rawValue) {
+    if (payload == nullptr || numExpectedBytes == 0) {
+        return false;
+    }
+
+    char hex[257] = {'\0'};
+    size_t hexLen = 0;
+    for (const char *p = payload; *p != '\0' && hexLen < sizeof(hex) - 1; ++p) {
+        if (isxdigit(static_cast<unsigned char>(*p))) {
+            hex[hexLen++] = static_cast<char>(toupper(static_cast<unsigned char>(*p)));
+        }
+    }
+
+    char marker[5] = {'\0'};
+    snprintf(marker, sizeof(marker), "%02X%02X", service + 0x40, pid & 0xFF);
+    const size_t neededLen = strlen(marker) + (numExpectedBytes * 2);
+    if (hexLen < neededLen) {
+        return false;
+    }
+
+    for (size_t i = 0; i + neededLen <= hexLen; ++i) {
+        if (strncmp(hex + i, marker, strlen(marker)) != 0) {
+            continue;
+        }
+
+        rawValue = 0;
+        size_t pos = i + strlen(marker);
+        for (uint8_t byteIndex = 0; byteIndex < numExpectedBytes; ++byteIndex) {
+            char byteText[3] = {hex[pos], hex[pos + 1], '\0'};
+            rawValue = (rawValue << 8) | strtoul(byteText, nullptr, 16);
+            pos += 2;
+        }
+        return true;
+    }
+
+    return false;
 }
 
 OBDState::~OBDState() {
@@ -128,9 +172,15 @@ uint32_t OBDState::supportedPIDs(const uint8_t &service, const uint16_t &pid) co
 
 bool OBDState::isPIDSupported(const uint8_t &service, const uint16_t &pid) const {
     if (service >= 0x01 && service <= 0x0A) {
+        const uint8_t pidInterval = (pid / PID_INTERVAL_OFFSET) * PID_INTERVAL_OFFSET;
+        const uint8_t relativePid = pid - pidInterval;
+        if (relativePid == 0) {
+            return true;
+        }
+
         const uint32_t response = supportedPIDs(service, pid);
         if (elm327->nb_rx_state == ELM_SUCCESS) {
-            return ((response >> (32 - pid)) & 0x1);
+            return ((response >> (32 - relativePid)) & 0x1);
         }
 
         return false;
@@ -207,6 +257,18 @@ bool OBDState::isSupported() const {
 
 bool OBDState::isEnabled() const {
     return this->enabled;
+}
+
+uint8_t OBDState::getService() const {
+    return this->service;
+}
+
+uint16_t OBDState::getPID() const {
+    return this->pid;
+}
+
+int8_t OBDState::getUpdateStatus() const {
+    return this->updateStatus;
 }
 
 void OBDState::setEnabled(bool enable) {
@@ -402,8 +464,13 @@ template<typename T>
 void TypedOBDState<T>::readValue() {
     if (elm327 != nullptr && elm327->elm_port && this->type == obd::READ) {
         if (!this->init && this->readFunction == nullptr) {
-            this->supported = this->checkPidSupport && isPIDSupported(this->service, this->pid) || true;
-            this->init = this->checkPidSupport && elm327->nb_rx_state == ELM_SUCCESS || true;
+            if (this->checkPidSupport && this->pid % PID_INTERVAL_OFFSET != 0) {
+                this->supported = isPIDSupported(this->service, this->pid);
+                this->init = elm327->nb_rx_state == ELM_SUCCESS;
+            } else {
+                this->supported = true;
+                this->init = true;
+            }
         } else if (this->readFunction != nullptr) {
             this->init = true;
         }
@@ -426,26 +493,32 @@ void TypedOBDState<T>::readValue() {
                 this->oldValue = this->value;
                 this->previousUpdate = this->lastUpdate;
                 this->processing = true;
+                elm327->nb_rx_state = ELM_GETTING_MSG;
             }
 
-            T value = static_cast<T>(this->readFunction != nullptr
-                                         ? this->readFunction()
-                                         : this->responseFormat == obd::PREDEFINED
-                                               ? elm327->processPID(this->service, this->pid, this->numResponses,
-                                                                    this->numExpectedBytes,
-                                                                    this->scaleFactor, this->bias)
-                                               : conditionResponse(
-                                                   elm327->processPID(
-                                                       this->service,
-                                                       this->pid,
-                                                       this->numResponses,
-                                                       this->numExpectedBytes,
-                                                       1,
-                                                       0
-                                                   ),
-                                                   this->responseFormat, this->scaleFactor, this->bias
-                                               )
-            );
+            T value = 0;
+
+            if (this->readFunction != nullptr) {
+                value = static_cast<T>(this->readFunction());
+            } else {
+                char command[8] = {'\0'};
+                snprintf(command, sizeof(command), "%02X%02X", this->service, this->pid & 0xFF);
+                const int8_t commandStatus = elm327->sendCommand_Blocking(command);
+                uint64_t rawValue = 0;
+                if (commandStatus == ELM_SUCCESS &&
+                    parsePidPayload(elm327->payload, this->service, this->pid, this->numExpectedBytes, rawValue)) {
+                    const double scaledValue = this->responseFormat == obd::PREDEFINED
+                                                   ? (static_cast<double>(rawValue) * this->scaleFactor) + this->bias
+                                                   : conditionResponse(static_cast<double>(rawValue),
+                                                                       this->responseFormat,
+                                                                       this->scaleFactor,
+                                                                       this->bias);
+                    value = static_cast<T>(scaledValue);
+                    elm327->nb_rx_state = ELM_SUCCESS;
+                } else {
+                    elm327->nb_rx_state = commandStatus == ELM_SUCCESS ? ELM_NO_DATA : commandStatus;
+                }
+            }
 
             if (elm327->nb_rx_state == ELM_SUCCESS) {
                 this->setPayload(elm327->payload);
@@ -464,12 +537,13 @@ void TypedOBDState<T>::readValue() {
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
             } else if (elm327->nb_rx_state != ELM_GETTING_MSG) {
+                this->lastUpdate = millis();
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
             }
 
             if (this->header > 0 && this->setHeader && !this->processing) {
-                if (elm327->sendCommand_Blocking(SET_ALL_TO_DEFAULTS) == ELM_SUCCESS) {
+                if (elm327->sendCommand_Blocking("AT SH 7DF") == ELM_SUCCESS) {
                     if (strstr(elm327->payload, RESPONSE_OK) != nullptr) {
                         this->setHeader = false;
                     }

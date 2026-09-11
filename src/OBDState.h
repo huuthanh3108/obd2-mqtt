@@ -160,6 +160,12 @@ public:
 
     bool isEnabled() const;
 
+    uint8_t getService() const;
+
+    uint16_t getPID() const;
+
+    int8_t getUpdateStatus() const;
+
     void setEnabled(bool enable);
 
     virtual OBDState *withEnabled(bool enable);

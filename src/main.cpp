@@ -19,11 +19,22 @@
 #include <WiFi.h>
 #include <atomic>
 
-#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
+#ifdef USE_BLE
+
+#if !defined(CONFIG_BT_ENABLED)
+#error Bluetooth is not enabled
 #endif
-#if !defined(CONFIG_BT_SPP_ENABLED) && !defined(USE_BLE)
-#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
+
+#else
+
+#if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+#error Bluetooth is not enabled
+#endif
+
+#if !defined(CONFIG_BT_SPP_ENABLED)
+#error Serial Bluetooth not available
+#endif
+
 #endif
 
 #ifndef BUILD_GIT_BRANCH
@@ -52,16 +63,24 @@
 #define HA_T_BAT_LVL            "internalBatteryLevel"
 #define HA_T_GSM_LOC            "gsmLocation"
 #define HA_T_GPS_LOC            "gpsLocation"
+#define HA_T_OBD_LAST_SEEN      "obdLastSeen"
+#define HA_T_OBD_DATA_AGE       "obdDataAge"
 #define HAT_T_DTC               "dtc"
 #define HAT_T_CLEAR_DTC         "clearDTC"
 
 #include <numeric>
+#include <algorithm>
 
 #include "settings.h"
 #include "helper.h"
 #include "obd.h"
 #include "gsm.h"
 #include "http.h"
+#include "debug_log.h"
+#include "esp_task_wdt.h"
+#ifdef ENABLE_TPMS
+#include "tpms.h"
+#endif
 
 HTTPServer server(80);
 
@@ -74,7 +93,11 @@ HTTPServer server(80);
 StreamDebugger debugger(SerialAT, Serial);
 GSM gsm(debugger);
 #else
+#ifdef NO_MODEM
+GSM gsm(Serial);
+#else
 GSM gsm(SerialAT);
+#endif
 #endif
 
 MQTT mqtt = MQTT();
@@ -118,6 +141,18 @@ std::atomic_bool clearDTC{false};
 TaskHandle_t outputTaskHdl;
 TaskHandle_t stateTaskHdl;
 
+constexpr unsigned long OBD_RECONNECT_INITIAL_MS = 5000UL;
+constexpr unsigned long OBD_RECONNECT_MAX_MS = 300000UL;
+constexpr unsigned long MQTT_RECONNECT_INITIAL_MS = 5000UL;
+constexpr unsigned long MQTT_RECONNECT_MAX_MS = 120000UL;
+constexpr unsigned long APP_WATCHDOG_TIMEOUT_SEC = 90UL;
+constexpr int MQTT_CONNECT_TIMEOUT_MS = 5000;
+
+std::atomic<unsigned long> nextOBDReconnect{0};
+std::atomic<unsigned long> obdReconnectDelay{OBD_RECONNECT_INITIAL_MS};
+std::atomic<unsigned long> nextMQTTReconnect{0};
+std::atomic<unsigned long> mqttReconnectDelay{MQTT_RECONNECT_INITIAL_MS};
+
 size_t getESPHeapSize() {
     return heap_caps_get_free_size(MALLOC_CAP_8BIT);
 }
@@ -126,7 +161,9 @@ void deepSleep(const int sec) {
     log_d("Prepare nap...");
     WiFi.disconnect(true);
     OBD.end();
+    #ifndef NO_MODEM
     gsm.powerOff();
+    #endif
     if (outputTaskHdl != nullptr) {
         vTaskDelete(outputTaskHdl);
     }
@@ -138,11 +175,11 @@ void deepSleep(const int sec) {
 }
 
 void consoleSendHeader(const char *str) {
-    DEBUG_PORT.printf("Send %s data...", str);
+    DBG_PRINTF("Send %s data...", str);
 }
 
 void consoleSendFooter(const bool success, const unsigned long time) {
-    DEBUG_PORT.printf("...%s (%lums)\n", success ? "done" : "failed", time);
+    DBG_PRINTF("...%s (%lums)\n", success ? "done" : "failed", time);
 }
 
 std::string buildDTCPayload(DTCs *dtcs) {
@@ -199,7 +236,11 @@ void startWiFiAP() {
 
     WiFi.disconnect(true);
 
+#ifdef NO_MODEM
+    WiFi.mode(WIFI_AP_STA);
+#else
     WiFi.mode(WIFI_AP);
+#endif
 
     WiFi.onEvent(WiFiAPStart, WiFiEvent_t::ARDUINO_EVENT_WIFI_AP_START);
     WiFi.onEvent(WiFiAPStop, WiFiEvent_t::ARDUINO_EVENT_WIFI_AP_STOP);
@@ -207,6 +248,10 @@ void startWiFiAP() {
     WiFi.onEvent(WiFiAPStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_AP_STADISCONNECTED);
 
     String ssid = Settings.WiFi.getAPSSID();
+#ifdef NO_MODEM
+    ssid = "OBD2-MQTT-" + String(stripChars(WiFi.macAddress().c_str()).c_str());
+    WiFi.softAP(ssid.c_str(), "obd2mqtt");
+#else
     if (ssid.isEmpty()) {
         ssid = "OBD2-MQTT-" + String(stripChars(WiFi.macAddress().c_str()).c_str());
         Settings.WiFi.setAPSSID(ssid.c_str());
@@ -215,6 +260,7 @@ void startWiFiAP() {
         ssid.c_str(),
         Settings.WiFi.getAPPassword()
     );
+#endif
 }
 
 void startHttpServer() {
@@ -313,16 +359,27 @@ void startHttpServer() {
         wifiInfo["SSID"] = WiFi.softAPSSID();
         wifiInfo["ip"] = WiFi.softAPIP().toString();
         wifiInfo["mac"] = WiFi.macAddress();
+#ifdef NO_MODEM
+        wifiInfo["staConnected"] = WiFi.status() == WL_CONNECTED;
+        wifiInfo["staSSID"] = WiFi.SSID();
+        wifiInfo["staIP"] = WiFi.localIP().toString();
+        wifiInfo["rssi"] = WiFi.RSSI();
+#endif
 
         serializeJson(wifiInfo, payload);
 
         request->send(200, MIME_TYPE_JSON, payload.c_str());
     });
-
     server.on("/api/modem", HTTP_GET, [](AsyncWebServerRequest *request) {
         std::string payload;
         JsonDocument modemInfo;
 
+#ifdef NO_MODEM
+        modemInfo["name"] = "WiFi STA";
+        modemInfo["info"] = WiFi.status() == WL_CONNECTED ? "connected" : "disconnected";
+        modemInfo["signalQuality"] = WiFi.RSSI();
+        modemInfo["ip"] = WiFi.localIP().toString();
+#else
         modemInfo["name"] = gsm.modem.getModemName();
         modemInfo["info"] = gsm.modem.getModemInfo();
         modemInfo["signalQuality"] = gsm.modem.getSignalQuality();
@@ -331,6 +388,7 @@ void startHttpServer() {
         modemInfo["IMSI"] = gsm.modem.getIMSI();
         modemInfo["CCID"] = gsm.modem.getSimCCID();
         modemInfo["operator"] = gsm.modem.getOperator();
+#endif
 
         serializeJson(modemInfo, payload);
 
@@ -369,6 +427,8 @@ void startHttpServer() {
 void onOBDConnected() {
     obdConnected = true;
     obdConnectErrors = 0;
+    obdReconnectDelay = OBD_RECONNECT_INITIAL_MS;
+    nextOBDReconnect = 0;
 }
 
 void onOBDConnectError() {
@@ -379,6 +439,20 @@ void onOBDConnectError() {
         deepSleep(Settings.General.getSleepDuration());
     }
 #endif
+}
+
+void scheduleNextOBDReconnect() {
+    const unsigned long delayMs = obdReconnectDelay.load();
+    nextOBDReconnect = millis() + delayMs;
+    obdReconnectDelay = std::min(delayMs * 2, OBD_RECONNECT_MAX_MS);
+    DEBUG_PORT.printf("Next OBD BLE reconnect in %lus\n", delayMs / 1000UL);
+}
+
+void scheduleNextMQTTReconnect() {
+    const unsigned long delayMs = mqttReconnectDelay.load();
+    nextMQTTReconnect = millis() + delayMs;
+    mqttReconnectDelay = std::min(delayMs * 2, MQTT_RECONNECT_MAX_MS);
+    DEBUG_PORT.printf("Next MQTT reconnect in %lus\n", delayMs / 1000UL);
 }
 
 #ifdef USE_BLE
@@ -457,9 +531,31 @@ bool sendDiscoveryData() {
         allSendsSuccessed = true;
     }
 
+#ifdef ENABLE_TPMS
+    allSendsSuccessed |= TPMS.sendDiscovery(mqtt, allowOffline);
+#endif
+
     consoleSendFooter(allSendsSuccessed, millis() - start);
 
     return allSendsSuccessed;
+}
+
+unsigned long latestOBDLastUpdate() {
+    unsigned long latest = 0;
+    std::vector<OBDState *> states{};
+    OBD.getStates([](const OBDState *state) {
+        return state->isVisible() &&
+               state->isEnabled() &&
+               state->isSupported() &&
+               !state->isDiagnostic() &&
+               state->getLastUpdate() > 0;
+    }, states);
+
+    for (auto &state: states) {
+        latest = std::max(latest, static_cast<unsigned long>(state->getLastUpdate()));
+    }
+
+    return latest;
 }
 
 bool sendDiagnosticDiscoveryData() {
@@ -475,6 +571,10 @@ bool sendDiagnosticDiscoveryData() {
     allSendsSuccessed |= mqtt.sendTopicConfig(HA_T_UPTIME, "Uptime", "timer-play", "sec", "", SC_MEASUREMENT,
                                               EC_DIAGNOSTIC);
     allSendsSuccessed |= mqtt.sendTopicConfig(HA_T_RECONNECTS, "Number of reconnects", "connection", "", "",
+                                              SC_MEASUREMENT, EC_DIAGNOSTIC);
+    allSendsSuccessed |= mqtt.sendTopicConfig(HA_T_OBD_LAST_SEEN, "OBD Last Seen", "timer", "s", "",
+                                              SC_MEASUREMENT, EC_DIAGNOSTIC);
+    allSendsSuccessed |= mqtt.sendTopicConfig(HA_T_OBD_DATA_AGE, "OBD Data Age", "timer-alert", "s", "",
                                               SC_MEASUREMENT, EC_DIAGNOSTIC);
 
     if (!gsm.getIpAddress().empty()) {
@@ -548,9 +648,6 @@ bool sendStates(std::vector<OBDState *> &states, bool allSendsSuccessed) {
         for (auto &state: states) {
             const size_t len = OBD.getPayloadLength() < 64 ? 64 : OBD.getPayloadLength() + 1;
             char tmp_char[len];
-            if (state->getLastUpdate() + state->getUpdateInterval() > millis()) {
-                continue;
-            }
 
             if (state->valueType() == OBD_STATE_TYPE_INT) {
                 auto *is = reinterpret_cast<OBDStateInt *>(state);
@@ -567,6 +664,14 @@ bool sendStates(std::vector<OBDState *> &states, bool allSendsSuccessed) {
                 char *str = is->formatValue();
                 strncpy(tmp_char, str, len);
                 free(str);
+            }
+
+            if (strcmp(state->getName(), "speed") == 0 ||
+                strcmp(state->getName(), "engineCoolantTemp") == 0 ||
+                strcmp(state->getName(), "engineLoad") == 0 ||
+                strcmp(state->getName(), "throttle") == 0 ||
+                strcmp(state->getName(), "batteryVoltage") == 0) {
+                DBG_PRINTF("MQTT state update: %s=%s\n", state->getName(), tmp_char);
             }
 
             allSendsSuccessed |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
@@ -598,6 +703,19 @@ bool sendOBDData() {
     return allSendsSuccessed;
 }
 
+#ifdef ENABLE_TPMS
+bool sendTPMSData() {
+    const unsigned long start = millis();
+    bool allSendsSuccessed = false;
+
+    consoleSendHeader("TPMS");
+    allSendsSuccessed |= TPMS.sendState(mqtt);
+    consoleSendFooter(allSendsSuccessed, millis() - start);
+
+    return allSendsSuccessed;
+}
+#endif
+
 bool sendDiagnosticData() {
     const unsigned long start = millis();
     bool allSendsSuccessed = false;
@@ -616,6 +734,13 @@ bool sendDiagnosticData() {
 
     sprintf(tmp_char, "%d", mqtt.reconnectAttemps());
     allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_RECONNECTS, std::string(tmp_char));
+
+    const unsigned long obdLastSeen = latestOBDLastUpdate();
+    const unsigned long obdDataAge = obdLastSeen == 0 ? 0 : (millis() - obdLastSeen) / 1000UL;
+    sprintf(tmp_char, "%lu", obdLastSeen == 0 ? 0 : obdLastSeen / 1000UL);
+    allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_LAST_SEEN, std::string(tmp_char));
+    sprintf(tmp_char, "%lu", obdDataAge);
+    allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_DATA_AGE, std::string(tmp_char));
 
     if (!gsm.getIpAddress().empty()) {
         sprintf(tmp_char, "%s", gsm.getIpAddress().c_str());
@@ -708,6 +833,10 @@ bool sendLocationData() {
     const unsigned long start = millis();
     bool allSendsSuccessed = false;
 
+    if (!GSM::hasGSMLocation() && !GSM::hasGPSLocation()) {
+        return true;
+    }
+
     consoleSendHeader("location");
 
     if (GSM::hasGSMLocation()) {
@@ -792,10 +921,20 @@ void mqttSendData() {
             }
         }
 
-        if (obdConnected) {
-            if (millis() > lastMQTTStaticDiagnosticOutput) {
-                if (sendStaticDiagnosticData()) {
-                    lastMQTTStaticDiagnosticOutput = calcTimestamp(Settings.MQTT.getDiagnosticInterval() * 2);
+            bool telemetrySent = false;
+
+#ifdef ENABLE_TPMS
+            if (sendTPMSData()) {
+                telemetrySent = true;
+            } else {
+                return;
+            }
+#endif
+
+            if (obdConnected) {
+                if (millis() > lastMQTTStaticDiagnosticOutput) {
+                    if (sendStaticDiagnosticData()) {
+                        lastMQTTStaticDiagnosticOutput = calcTimestamp(Settings.MQTT.getDiagnosticInterval() * 2);
                 } else {
                     return;
                 }
@@ -807,21 +946,28 @@ void mqttSendData() {
                 } else {
                     return;
                 }
+                }
+
+                if (sendOBDData()) {
+                    telemetrySent = true;
+                } else {
+                    return;
+                }
             }
 
-            if (sendOBDData()) {
+            if (telemetrySent) {
                 lastMQTTOutput = calcTimestamp(Settings.MQTT.getDataInterval());
+            } else if (mqtt.sendTopicUpdate(LWT_TOPIC, LWT_CONNECTED)) {
+                const uint iv = Settings.MQTT.getDataInterval() * 5;
+                lastMQTTOutput = calcTimestamp(iv < MQTT_KEEPALIVE ? iv : MQTT_KEEPALIVE - 1);
             }
-        } else if (mqtt.sendTopicUpdate(LWT_TOPIC, LWT_CONNECTED)) {
-            const uint iv = Settings.MQTT.getDataInterval() * 5;
-            lastMQTTOutput = calcTimestamp(iv < MQTT_KEEPALIVE ? iv : MQTT_KEEPALIVE - 1);
-        }
     } else {
         delay(500);
     }
 }
 
 [[noreturn]] void readStatesTask(void *parameters) {
+    esp_task_wdt_add(nullptr);
     for (;;) {
         if (!wifiAPInUse) {
             if (clearDTC) {
@@ -834,16 +980,35 @@ void mqttSendData() {
                 clearDTC = false;
             }
 
-            OBD.loop();
+            if (OBD.connected()) {
+                OBD.loop();
+            } else if (millis() >= nextOBDReconnect) {
+                DEBUG_PORT.println("OBD BLE disconnected; trying reconnect.");
+                if (!OBD.connect()) {
+                    scheduleNextOBDReconnect();
+                }
+            }
         }
+        esp_task_wdt_reset();
         delay(10);
     }
 }
 
 [[noreturn]] void outputTask(void *parameters) {
+    esp_task_wdt_add(nullptr);
     unsigned long checkInterval = 0;
+    bool networkWasConnected = gsm.isNetworkConnected();
     for (;;) {
         if (!wifiAPInUse) {
+#ifdef ENABLE_TPMS
+#ifdef TPMS_SIMULATION
+            TPMS.loop();
+#else
+            if (obdConnected) {
+                TPMS.loop();
+            }
+#endif
+#endif
 #if DEVICE_CAN_DEEP_SLEEP && DEVICE_HAS_BATTERY
             if (GSM::isBatteryUsed()) {
                 const unsigned int batVoltage = GSM::getBatteryVoltage();
@@ -877,16 +1042,26 @@ void mqttSendData() {
 #endif
 
             if (!gsm.checkNetwork()) {
+                networkWasConnected = false;
+                esp_task_wdt_reset();
+                delay(1000);
                 continue;
+            }
+            if (!networkWasConnected) {
+                DEBUG_PORT.println("WiFi recovered; MQTT reconnect will run now.");
+                nextMQTTReconnect = 0;
+                networkWasConnected = true;
             }
 
             mqtt.loop();
 
+            #ifndef NO_MODEM
             if ((GSM::hasGSMLocation() || GSM::hasGPSLocation()) && millis() > checkInterval) {
                 unsigned long start = millis();
                 bool allReadSuccessed = false;
 
                 DEBUG_PORT.print("Read location...");
+
                 if (gsm.isNetworkConnected()) {
                     float gsm_latitude = 0;
                     float gsm_longitude = 0;
@@ -917,26 +1092,44 @@ void mqttSendData() {
                 consoleSendFooter(allReadSuccessed, millis() - start);
             }
 
+            #endif
+
+            #ifndef NO_MODEM
             if (GSM::isUseGPRS()) {
                 signalQuality = gsm.getSignalQuality();
             }
+            #endif
 
             if (!mqtt.connected()) {
-                auto client_id = String(MQTT_CLIENT_ID) + "-" + stripChars(mqtt.getIdentifier()).c_str();
-                if (!mqtt.connect(
-                    client_id.c_str(),
-                    Settings.MQTT.getHostname().c_str(),
-                    Settings.MQTT.getPort(),
-                    Settings.MQTT.getUsername().c_str(),
-                    Settings.MQTT.getPassword().c_str(),
-                    static_cast<mqttProtocol>(Settings.MQTT.getProtocol())
-                )) {
-                    gsm.checkNetwork(true);
+                if (millis() >= nextMQTTReconnect) {
+                    auto client_id = String(MQTT_CLIENT_ID) + "-" + stripChars(mqtt.getIdentifier()).c_str();
+                    if (mqtt.connect(
+                        client_id.c_str(),
+                        Settings.MQTT.getHostname().c_str(),
+                        Settings.MQTT.getPort(),
+                        Settings.MQTT.getUsername().c_str(),
+                        Settings.MQTT.getPassword().c_str(),
+                        static_cast<mqttProtocol>(Settings.MQTT.getProtocol()),
+                        MQTT_CONNECT_TIMEOUT_MS
+                    )) {
+                        mqttReconnectDelay = MQTT_RECONNECT_INITIAL_MS;
+                        nextMQTTReconnect = 0;
+                    } else {
+                        scheduleNextMQTTReconnect();
+#ifdef NO_MODEM
+                        if (!gsm.isNetworkConnected()) {
+                            gsm.checkNetwork(true);
+                        }
+#else
+                        gsm.checkNetwork(true);
+#endif
+                    }
                 }
             } else {
                 mqttSendData();
             }
         }
+        esp_task_wdt_reset();
         delay(50);
     }
 }
@@ -950,8 +1143,12 @@ String buildIdentifier(const char *devMac) {
         mID = devMac;
         if (static_cast<MQTTSettings::MQTTIdentifierType>(Settings.MQTT.getIdType()) ==
             MQTTSettings::MQTTIdentifierType::MAC_IMEI) {
+#ifdef NO_MODEM
+            mID += "-S3";
+#else
             mID += "-";
             mID += gsm.modem.getIMEI().substring(gsm.modem.getIMEI().length() - 4).c_str();
+#endif
         }
     }
     return mID;
@@ -973,7 +1170,8 @@ void startReadTask() {
 #else
         OBD.onDevicesDiscovered(onBTDevicesDiscovered);
 #endif
-        OBD.connect();
+        nextOBDReconnect = 0;
+        obdReconnectDelay = OBD_RECONNECT_INITIAL_MS;
 
         xTaskCreatePinnedToCore(readStatesTask, "ReadStatesTask", 9216, nullptr, 1, &stateTaskHdl, 1);
     }
@@ -998,8 +1196,24 @@ void setup() {
     Settings.readSettings(LittleFS);
     OBD.readStates(LittleFS);
 
-    // disable Watch Dog for Core 0 - should fix crashes
-    disableCore0WDT();
+    esp_task_wdt_init(APP_WATCHDOG_TIMEOUT_SEC, true);
+
+    OBD.onConnected(onOBDConnected);
+    OBD.onConnectError(onOBDConnectError);
+    OBD.begin(Settings.OBD2.getName(OBD_ADP_NAME), Settings.OBD2.getMAC(), Settings.OBD2.getProtocol(),
+              Settings.OBD2.getCheckPIDSupport(), Settings.OBD2.getDebug(), Settings.OBD2.getSpecifyNumResponses());
+
+#ifdef ENABLE_TPMS
+    TPMS.begin();
+#endif
+
+    String mID = buildIdentifier(Settings.OBD2.getMAC().c_str());
+    if (!mID.isEmpty()) {
+        startReadTask();
+    } else {
+        startReadTask();
+        mID = buildIdentifier(OBD.getConnectedBTAddress().c_str());
+    }
 
     startWiFiAP();
     startHttpServer();
@@ -1009,18 +1223,7 @@ void setup() {
     gsm.connectToNetwork();
     gsm.enableGPS();
 
-    OBD.onConnected(onOBDConnected);
-    OBD.onConnectError(onOBDConnectError);
-    OBD.begin(Settings.OBD2.getName(OBD_ADP_NAME), Settings.OBD2.getMAC(), Settings.OBD2.getProtocol(),
-              Settings.OBD2.getCheckPIDSupport(), Settings.OBD2.getDebug(), Settings.OBD2.getSpecifyNumResponses());
-
-    String mID = buildIdentifier(Settings.OBD2.getMAC().c_str());
     if (!mID.isEmpty()) {
-        startOutputTask(mID.c_str());
-        startReadTask();
-    } else {
-        startReadTask();
-        mID = buildIdentifier(OBD.getConnectedBTAddress().c_str());
         startOutputTask(mID.c_str());
     }
 }

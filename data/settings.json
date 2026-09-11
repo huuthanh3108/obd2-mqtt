@@ -1,5 +1,21 @@
 {
+  "wifi": {
+    "ssid": "MacBook Pro’s iPhone",
+    "password": "Dnictpro123"
+  },
+  "mqtt": {
+    "hostname": "anhkuteo.ddns.net",
+    "port": 8883,
+    "secure": false,
+    "username": "mqtt_user",
+    "password": "mqtt_user"
+  },
   "obd2": {
-    "name": "OBDII"
+    "name": "IOS-Vlink",
+    "mac": "41:42:86:9A:24:23",
+    "checkPIDSupport": false,
+    "debug": false,
+    "protocol": "0",
+    "specifyNumResponses": false
   }
 }

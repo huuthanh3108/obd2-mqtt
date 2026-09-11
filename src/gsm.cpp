@@ -18,8 +18,10 @@
 
 #include <settings.h>
 
+#ifndef NO_MODEM
 #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
 #include "device_sim800.h"
+#endif
 #endif
 
 #if defined(LILYGO_GPS_SHIELD)
@@ -33,6 +35,11 @@ TinyGPSPlus gps;
 #endif
 
 #include "soc/adc_periph.h"
+
+#ifdef NO_MODEM
+#define WIFI_CONNECT_TIMEOUT_MS     8000UL
+#define WIFI_RECONNECT_INTERVAL_MS  10000UL
+#endif
 
 int GSM::convertSQToRSSI(int signalQuality) {
     if (signalQuality > 0 && signalQuality <= 32) {
@@ -200,9 +207,16 @@ void GSM::ulpPrepareSleep() {
 #endif
 }
 
-GSM::GSM(Stream &stream) : stream(stream), modem(TinyGsm(stream)) {
+GSM::GSM(Stream &stream) : stream(stream)
+#ifndef NO_MODEM
+    , modem(TinyGsm(stream))
+#endif
+{
     ipAddress = "";
     reconnectAttempts = 0;
+#ifdef NO_MODEM
+    lastNetworkAttempt = 0;
+#endif
 #if defined(LILYGO_T_A7670) or defined(LILYGO_T_CALL_A7670_V1_0) or defined(LILYGO_T_CALL_A7670_V1_1) or defined(LILYGO_T_A7608X) or defined(LILYGO_SIM7000G) or defined(LILYGO_SIM7070G)
     networkMode = MODEM_NETWORK_AUTO;
 #endif
@@ -214,10 +228,15 @@ Client *GSM::getClient(const bool useSecure) {
             free(client);
         }
         if (secureClient == nullptr) {
+#ifdef NO_MODEM
+            secureClient = new WiFiClientSecure();
+            secureClient->setInsecure();
+#else
 #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
             Serial.println("WARNING: SIM800 devices supports only SSL 2/3 and TLS 1.0");
 #endif
             secureClient = new TinyGsmClientSecure(modem);
+#endif
         }
 
         return secureClient;
@@ -227,12 +246,19 @@ Client *GSM::getClient(const bool useSecure) {
         free(secureClient);
     }
     if (client == nullptr) {
+#ifdef NO_MODEM
+        client = new WiFiClient();
+#else
         client = new TinyGsmClient(modem);
+#endif
     }
     return client;
 }
 
 void GSM::resetModem() {
+#ifdef NO_MODEM
+    reconnectAttempts = 0;
+#else
 #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
     digitalWrite(MODEM_POWER_ON, LOW);
     delay(1000);
@@ -267,6 +293,7 @@ void GSM::resetModem() {
         }
     }
     Serial.println("...success");
+#endif
 }
 
 std::string GSM::getIpAddress() {
@@ -274,10 +301,14 @@ std::string GSM::getIpAddress() {
 }
 
 bool GSM::isUseGPRS() {
+#ifdef NO_MODEM
+    return false;
+#else
 #if TINY_GSM_USE_GPRS
     return true;
 #else
     return false;
+#endif
 #endif
 }
 
@@ -286,6 +317,33 @@ void GSM::setNetworkMode(int mode) {
 }
 
 void GSM::connectToNetwork() {
+#ifdef NO_MODEM
+    if (Settings.WiFi.getAPSSID().isEmpty()) {
+        Serial.println("No WiFi SSID was configured");
+        return;
+    }
+
+    Serial.printf("Connecting WiFi STA to %s...", Settings.WiFi.getAPSSID().c_str());
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.setSleep(true);
+    WiFi.setAutoReconnect(true);
+    WiFi.persistent(false);
+    WiFi.begin(Settings.WiFi.getAPSSID().c_str(), Settings.WiFi.getAPPassword().c_str());
+    lastNetworkAttempt = millis();
+
+    const unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    if (WiFi.status() == WL_CONNECTED) {
+        ipAddress = WiFi.localIP().toString().c_str();
+        Serial.printf("...success\nIP Address: %s\n", ipAddress.c_str());
+    } else {
+        Serial.println("...fail");
+    }
+#else
     Serial.println("Start modem...");
 
 #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
@@ -411,18 +469,64 @@ restart:
         // currently not enough space for that
         // updateLocaleTime();
     }
+#endif
 }
 
 void GSM::powerOff() {
+#ifdef NO_MODEM
+    WiFi.disconnect(false);
+#else
     modem.poweroff();
 
     // check if not response
     while (modem.testAT()) {
         delay(500);
     }
+#endif
 }
 
 bool GSM::checkNetwork(bool resetConnection) {
+#ifdef NO_MODEM
+    if (Settings.WiFi.getAPSSID().isEmpty()) {
+        return false;
+    }
+
+    if (resetConnection || WiFi.status() != WL_CONNECTED) {
+        if (!resetConnection && lastNetworkAttempt != 0 && millis() - lastNetworkAttempt < WIFI_RECONNECT_INTERVAL_MS) {
+            return false;
+        }
+
+        Serial.println("WiFi disconnected");
+        WiFi.mode(WIFI_AP_STA);
+        WiFi.setSleep(true);
+        WiFi.setAutoReconnect(true);
+        WiFi.persistent(false);
+        if (resetConnection) {
+            WiFi.disconnect(false);
+            delay(200);
+        }
+        WiFi.begin(Settings.WiFi.getAPSSID().c_str(), Settings.WiFi.getAPPassword().c_str());
+        lastNetworkAttempt = millis();
+
+        const unsigned long start = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
+            delay(500);
+        }
+
+        if (WiFi.status() != WL_CONNECTED) {
+            ++reconnectAttempts;
+            Serial.printf("WiFi reconnect failed (%u), retry in %lus\n",
+                          reconnectAttempts,
+                          WIFI_RECONNECT_INTERVAL_MS / 1000UL);
+            return false;
+        }
+
+        reconnectAttempts = 0;
+        ipAddress = WiFi.localIP().toString().c_str();
+        Serial.printf("WiFi reconnected: %s\n", ipAddress.c_str());
+    }
+    return true;
+#else
     // Make sure we're still registered on the network
     if (!modem.isNetworkConnected() || resetConnection) {
         Serial.println("Network disconnected");
@@ -484,10 +588,15 @@ bool GSM::checkNetwork(bool resetConnection) {
         }
     }
     return true;
+#endif
 }
 
 bool GSM::isNetworkConnected() {
+#ifdef NO_MODEM
+    return WiFi.status() == WL_CONNECTED;
+#else
     return modem.isNetworkConnected();
+#endif
 }
 
 // bool GSM::updateLocaleTime() {
@@ -520,29 +629,42 @@ bool GSM::isNetworkConnected() {
 // }
 
 short int GSM::getSignalQuality() {
+#ifdef NO_MODEM
+    return WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : SQ_NOT_KNOWN;
+#else
     if (isUseGPRS()) {
         return modem.getSignalQuality();
     }
     return 0;
+#endif
 }
 
 bool GSM::hasGSMLocation() {
+#ifdef NO_GPS
+    return false;
+#else
 #if defined TINY_GSM_MODEM_HAS_GSM_LOCATION
     return true;
 #else
     return false;
 #endif
+#endif
 }
 
 bool GSM::hasGPSLocation() {
+#ifdef NO_GPS
+    return false;
+#else
 #if defined(TINY_GSM_MODEM_HAS_GPS) || defined(LILYGO_GPS_SHIELD)
     return true;
 #else
     return false;
 #endif
+#endif
 }
 
 void GSM::enableGPS() {
+#ifndef NO_GPS
 #if defined TINY_GSM_MODEM_HAS_GPS
 #if !defined(TINY_GSM_MODEM_SARAR5) // not needed for this module
     Serial.print("Enabling GPS/GNSS/GLONASS...");
@@ -555,6 +677,7 @@ void GSM::enableGPS() {
 #endif
 #elif defined LILYGO_GPS_SHIELD
     SerialGPS.begin(9600, SERIAL_8N1, BOARD_GPS_RX_PIN, BOARD_GPS_TX_PIN);
+#endif
 #endif
 }
 

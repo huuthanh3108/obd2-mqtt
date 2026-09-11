@@ -17,6 +17,11 @@
 #pragma once
 #include <Arduino.h>
 
+#ifdef NO_MODEM
+#include <WiFi.h>
+#include <WiFiClient.h>
+#include <WiFiClientSecure.h>
+#else
 // Set serial for AT commands (to the module)
 // Use Hardware Serial on Mega, Leonardo, Micro
 #define SerialAT Serial1
@@ -44,6 +49,7 @@
 #include "device_sim7xxx.h"
 #elif defined(WS_A7670E) or defined(WS_A7670E_R2)
 #include "device_ws.h"
+#endif
 #endif
 
 #if defined(BOARD_BAT_ADC_PIN) or defined(MAX17048_I2C_ADDRESS)
@@ -86,9 +92,17 @@ class GSM {
     std::string ipAddress;
     unsigned int reconnectAttempts;
     int networkMode;
+#ifdef NO_MODEM
+    unsigned long lastNetworkAttempt;
+#endif
 
+#ifdef NO_MODEM
+    WiFiClient *client = nullptr;
+    WiFiClientSecure *secureClient = nullptr;
+#else
     TinyGsmClient *client = nullptr;
     TinyGsmClientSecure *secureClient = nullptr;
+#endif
 
     /**
      * Returns the ADC index for given GPIO.
@@ -118,7 +132,9 @@ class GSM {
 
 public:
     Stream &stream;
+#ifndef NO_MODEM
     TinyGsm modem;
+#endif
 
     /**
      * Convert signal quality value to RSSI

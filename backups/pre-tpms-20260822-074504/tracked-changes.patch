@@ -1,0 +1,2600 @@
+diff --git a/data/settings.json b/data/settings.json
+index a5286d1..f5711d5 100644
+--- a/data/settings.json
++++ b/data/settings.json
+@@ -1,5 +1,21 @@
+ {
++  "wifi": {
++    "ssid": "MacBook Pro’s iPhone",
++    "password": "Dnictpro123"
++  },
++  "mqtt": {
++    "hostname": "anhkuteo.ddns.net",
++    "port": 8883,
++    "secure": false,
++    "username": "mqtt_user",
++    "password": "mqtt_user"
++  },
+   "obd2": {
+-    "name": "OBDII"
++    "name": "IOS-Vlink",
++    "mac": "41:42:86:9A:24:23",
++    "checkPIDSupport": false,
++    "debug": false,
++    "protocol": "0",
++    "specifyNumResponses": false
+   }
+-}
+\ No newline at end of file
++}
+diff --git a/data/states.json b/data/states.json
+index 7fde0f0..3923122 100644
+--- a/data/states.json
++++ b/data/states.json
+@@ -1 +1,1070 @@
+-[{"type":1,"valueType":"int","enabled":true,"visible":false,"interval":-1,"name":"startTime","description":"Start Time","icon":"","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"expr":"($millis)","value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":-1,"name":"supportedPids_1_20","description":"Supported PIDs 1-20","icon":"","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"pid":{"service":1,"pid":0,"numResponses":1,"numExpectedBytes":4,"scaleFactor":"1"},"value":{"format":"%d","func":"toBitStr"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":-1,"name":"supportedPids_21_40","description":"Supported PIDs 21-40","icon":"","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"pid":{"service":1,"pid":32,"numResponses":1,"numExpectedBytes":4,"scaleFactor":"1"},"value":{"format":"%d","func":"toBitStr"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":-1,"name":"supportedPids_41_60","description":"Supported PIDs 41-60","icon":"","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"pid":{"service":1,"pid":64,"numResponses":1,"numExpectedBytes":4,"scaleFactor":"1"},"value":{"format":"%d","func":"toBitStr"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":-1,"name":"supportedPids_61_80","description":"Supported PIDs 61-80","icon":"","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"pid":{"service":1,"pid":96,"numResponses":1,"numExpectedBytes":4,"scaleFactor":"1"},"value":{"format":"%d","func":"toBitStr"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"engineLoad","description":"Engine Load","icon":"engine","unit":"%","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":4,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"100.0 / 255.0"},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"throttle","description":"Throttle","icon":"gauge","unit":"%","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":17,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"100.0 / 255.0"},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"rpm","description":"Revolutions per minute","icon":"engine","unit":"","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":12,"numResponses":1,"numExpectedBytes":2,"scaleFactor":"1.0 / 4.0"},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"speed","description":"Kilometer per Hour","icon":"speedometer","unit":"km/h","deviceClass":"speed","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":13,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1"},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"engineCoolantTemp","description":"Engine Coolant Temperature","icon":"thermometer","unit":"°C","deviceClass":"temperature","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":5,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1","bias":-40},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"oilTemp","description":"Oil Temperature","icon":"thermometer","unit":"°C","deviceClass":"temperature","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":92,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1","bias":-40},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"ambientAirTemp","description":"Ambient Temperature","icon":"thermometer","unit":"°C","deviceClass":"temperature","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":70,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1","bias":-40},"value":{"format":"%d"}},{"type":0,"valueType":"float","enabled":true,"visible":true,"interval":100,"name":"mafRate","description":"Mass Air Flow","icon":"air-filter","unit":"g/s","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":16,"numResponses":1,"numExpectedBytes":2,"scaleFactor":"1.0 / 100.0"},"value":{"format":"%4.2f"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":30000,"name":"fuelLevel","description":"Fuel Level","icon":"fuel","unit":"%","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":47,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"100.0 / 255.0"},"value":{"format":"%d"}},{"type":0,"valueType":"float","enabled":true,"visible":true,"interval":100,"name":"fuelRate","description":"Fuel Rate","icon":"fuel","unit":"L/h","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":94,"numResponses":1,"numExpectedBytes":2,"scaleFactor":"1.0 / 20.0"},"value":{"format":"%4.2f"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":30000,"name":"fuelType","description":"Fuel Type","icon":"water-opacity","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"pid":{"service":1,"pid":81,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1"},"value":{"format":"%d"}},{"type":0,"valueType":"float","enabled":true,"visible":true,"interval":30000,"name":"batteryVoltage","description":"Battery Voltage","icon":"battery","unit":"V","deviceClass":"voltage","measurement":true,"diagnostic":false,"readFunc":"batteryVoltage","value":{"format":"%4.2f"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"intakeAirTemp","description":"Intake Air Temperature","icon":"thermometer","unit":"°C","deviceClass":"temperature","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":15,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1","bias":-40},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":false,"visible":true,"interval":100,"name":"manifoldPressure","description":"Manifold Pressure","icon":"","unit":"kPa","deviceClass":"pressure","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":11,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1"},"value":{"format":"%d"}},{"type":0,"valueType":"float","enabled":false,"visible":true,"interval":100,"name":"timingAdvance","description":"Timing Advance","icon":"axis-x-rotate-clockwise","unit":"°","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":14,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"1.0 / 2.0","bias":-64},"value":{"format":"%4.2f"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"relativePedalPos","description":"Pedal Position","icon":"seat-recline-extra","unit":"%","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":90,"numResponses":1,"numExpectedBytes":1,"scaleFactor":"100.0 / 255.0"},"value":{"format":"%d"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":60000,"name":"monitorStatus","description":"Monitor Status","icon":"","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"pid":{"service":1,"pid":1,"numResponses":1,"numExpectedBytes":4,"scaleFactor":"1"},"value":{"format":"%d","func":"toBitStr"}},{"type":0,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"odometer","description":"Odometer","icon":"counter","unit":"km","deviceClass":"","measurement":true,"diagnostic":false,"pid":{"service":1,"pid":166,"numResponses":1,"numExpectedBytes":4,"scaleFactor":"1.0 / 10.0"},"value":{"format":"%d"}},{"type":1,"valueType":"bool","enabled":true,"visible":true,"interval":100,"name":"engineRunning","description":"Engine Running","icon":"engine","unit":"","deviceClass":"","measurement":false,"diagnostic":false,"expr":"max($rpm, 300) - 300","value":{"format":"%d"}},{"type":1,"valueType":"float","enabled":true,"visible":true,"interval":100,"name":"distanceDriven","description":"Calculated driven distance","icon":"map-marker-distance","unit":"km","deviceClass":"distance","measurement":true,"diagnostic":false,"expr":"$distanceDriven + ($speed.ov + $speed) / 2 / 3600 * ($millis - $distanceDriven.lu) / 1000","value":{"format":"%4.2f"}},{"type":1,"valueType":"float","enabled":true,"visible":true,"interval":100,"name":"consumption","description":"Calculated consumption","icon":"gas-station","unit":"L","deviceClass":"volume","measurement":true,"diagnostic":false,"expr":"$consumption + ($mafRate * 3600 / (afRatio($fuelType) * density($fuelType))) / 3600 * ($millis - $consumption.lu) / 1000","value":{"format":"%4.2f"}},{"type":1,"valueType":"float","enabled":true,"visible":true,"interval":100,"name":"consumptionReadable","description":"Calculated consumption per 100km","icon":"gas-station","unit":"l/100km","deviceClass":"","measurement":true,"diagnostic":false,"expr":"($consumption / $distanceDriven) * 100","value":{"format":"%4.2f"}},{"type":1,"valueType":"int","enabled":true,"visible":true,"interval":100,"name":"topSpeed","description":"Top Speed","icon":"speedometer","unit":"km/h","deviceClass":"speed","measurement":true,"diagnostic":false,"expr":"max($topSpeed, $speed)","value":{"format":"%d"}},{"type":1,"valueType":"float","enabled":true,"visible":true,"interval":100,"name":"avgSpeed","description":"Calculated average speed","icon":"speedometer-medium","unit":"km/h","deviceClass":"speed","measurement":true,"diagnostic":false,"expr":"$distanceDriven / (($millis - $startTime) / 1000) * 3600","value":{"format":"%4.2f"}},{"type":1,"valueType":"bool","enabled":true,"visible":true,"interval":60000,"name":"milState","description":"Check Engine Light","icon":"engine-off","unit":"","deviceClass":"","measurement":false,"diagnostic":false,"expr":"$monitorStatus.b3 & 128","value":{"format":"%d"}},{"type":1,"valueType":"int","enabled":true,"visible":true,"interval":60000,"name":"numDTCs","description":"Number of DTCs","icon":"code-array","unit":"","deviceClass":"","measurement":false,"diagnostic":true,"expr":"numDTCs($monitorStatus.b3 - 128)","value":{"format":"%d"}}]
+\ No newline at end of file
++[
++  {
++    "type": 1,
++    "valueType": "int",
++    "enabled": true,
++    "visible": false,
++    "interval": -1,
++    "name": "startTime",
++    "description": "Start Time",
++    "icon": "",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": false,
++    "diagnostic": true,
++    "expr": "($millis)",
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": false,
++    "visible": false,
++    "interval": 30000,
++    "name": "supportedPids_1_20",
++    "description": "Supported PIDs 1-20",
++    "icon": "",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": false,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 0,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 4,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d",
++      "func": "toBitStr"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": false,
++    "visible": false,
++    "interval": 30000,
++    "name": "supportedPids_21_40",
++    "description": "Supported PIDs 21-40",
++    "icon": "",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": false,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 32,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 4,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d",
++      "func": "toBitStr"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": false,
++    "visible": false,
++    "interval": 30000,
++    "name": "supportedPids_41_60",
++    "description": "Supported PIDs 41-60",
++    "icon": "",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": false,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 64,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 4,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d",
++      "func": "toBitStr"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 30000,
++    "name": "batteryVoltage",
++    "description": "Battery Voltage",
++    "icon": "battery",
++    "unit": "V",
++    "deviceClass": "voltage",
++    "measurement": true,
++    "diagnostic": false,
++    "readFunc": "batteryVoltage",
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": false,
++    "visible": false,
++    "interval": 1000,
++    "name": "rpm",
++    "description": "Revolutions per minute",
++    "icon": "engine",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 12,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1.0 / 4.0"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "speed",
++    "description": "Kilometer per Hour",
++    "icon": "speedometer",
++    "unit": "km/h",
++    "deviceClass": "speed",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 13,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "engineCoolantTemp",
++    "description": "Engine Coolant Temperature",
++    "icon": "thermometer",
++    "unit": "C",
++    "deviceClass": "temperature",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 5,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1",
++      "bias": -40
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "engineLoad",
++    "description": "Engine Load",
++    "icon": "engine",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 4,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "throttle",
++    "description": "Throttle",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 17,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "intakeAirTemp",
++    "description": "Intake Air Temperature",
++    "icon": "thermometer",
++    "unit": "C",
++    "deviceClass": "temperature",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 15,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1",
++      "bias": -40
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "mafRate",
++    "description": "Mass Air Flow",
++    "icon": "air-filter",
++    "unit": "g/s",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 16,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1.0 / 100.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "manifoldPressure",
++    "description": "Manifold Pressure",
++    "icon": "",
++    "unit": "kPa",
++    "deviceClass": "pressure",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 11,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "timingAdvance",
++    "description": "Timing Advance",
++    "icon": "axis-x-rotate-clockwise",
++    "unit": "deg",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 14,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1.0 / 2.0",
++      "bias": -64
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "shortTermFuelTrimBank1",
++    "description": "Short Term Fuel Trim Bank 1",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 6,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 128.0",
++      "bias": -100
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "longTermFuelTrimBank1",
++    "description": "Long Term Fuel Trim Bank 1",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 7,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 128.0",
++      "bias": -100
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "shortTermFuelTrimBank2",
++    "description": "Short Term Fuel Trim Bank 2",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 8,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 128.0",
++      "bias": -100
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "longTermFuelTrimBank2",
++    "description": "Long Term Fuel Trim Bank 2",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 9,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 128.0",
++      "bias": -100
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "fuelPressure",
++    "description": "Fuel Pressure",
++    "icon": "gauge",
++    "unit": "kPa",
++    "deviceClass": "pressure",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 10,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "3"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "runtimeSinceEngineStart",
++    "description": "Runtime Since Engine Start",
++    "icon": "timer",
++    "unit": "s",
++    "deviceClass": "duration",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 31,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "distanceWithMilOn",
++    "description": "Distance With MIL On",
++    "icon": "route",
++    "unit": "km",
++    "deviceClass": "distance",
++    "measurement": true,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 33,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "commandedEgr",
++    "description": "Commanded EGR",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 44,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "egrError",
++    "description": "EGR Error",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 45,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 128.0",
++      "bias": -100
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "commandedEvapPurge",
++    "description": "Commanded Evaporative Purge",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 46,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "fuelTankLevel",
++    "description": "Fuel Tank Level",
++    "icon": "fuel",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 47,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "warmupsSinceCodesCleared",
++    "description": "Warmups Since Codes Cleared",
++    "icon": "counter",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 48,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "distanceSinceCodesCleared",
++    "description": "Distance Since Codes Cleared",
++    "icon": "route",
++    "unit": "km",
++    "deviceClass": "distance",
++    "measurement": true,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 49,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "barometricPressure",
++    "description": "Barometric Pressure",
++    "icon": "gauge",
++    "unit": "kPa",
++    "deviceClass": "pressure",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 51,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "catalystTempBank1Sensor1",
++    "description": "Catalyst Temperature Bank 1 Sensor 1",
++    "icon": "thermometer",
++    "unit": "C",
++    "deviceClass": "temperature",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 60,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1.0 / 10.0",
++      "bias": -40
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "controlModuleVoltage",
++    "description": "Control Module Voltage",
++    "icon": "car-battery",
++    "unit": "V",
++    "deviceClass": "voltage",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 66,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1.0 / 1000.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "absoluteLoad",
++    "description": "Absolute Load",
++    "icon": "engine",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 67,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "commandedEquivalenceRatio",
++    "description": "Commanded Equivalence Ratio",
++    "icon": "gauge",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 68,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "2.0 / 65536.0"
++    },
++    "value": {
++      "format": "%4.3f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "relativeThrottle",
++    "description": "Relative Throttle",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 69,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "ambientAirTemp",
++    "description": "Ambient Air Temperature",
++    "icon": "thermometer",
++    "unit": "C",
++    "deviceClass": "temperature",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 70,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1",
++      "bias": -40
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "throttlePositionB",
++    "description": "Throttle Position B",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 71,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "throttlePositionC",
++    "description": "Throttle Position C",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 72,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "commandedThrottleActuator",
++    "description": "Commanded Throttle Actuator",
++    "icon": "gauge",
++    "unit": "%",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 76,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "100.0 / 255.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "timeRunWithMilOn",
++    "description": "Time Run With MIL On",
++    "icon": "timer",
++    "unit": "min",
++    "deviceClass": "duration",
++    "measurement": true,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 77,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "timeSinceCodesCleared",
++    "description": "Time Since Codes Cleared",
++    "icon": "timer",
++    "unit": "min",
++    "deviceClass": "duration",
++    "measurement": true,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 78,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 30000,
++    "name": "fuelType",
++    "description": "Fuel Type",
++    "icon": "fuel",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": false,
++    "diagnostic": true,
++    "pid": {
++      "service": 1,
++      "pid": 81,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1"
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "int",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "engineOilTemp",
++    "description": "Engine Oil Temperature",
++    "icon": "thermometer",
++    "unit": "C",
++    "deviceClass": "temperature",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 92,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 1,
++      "scaleFactor": "1",
++      "bias": -40
++    },
++    "value": {
++      "format": "%d"
++    }
++  },
++  {
++    "type": 0,
++    "valueType": "float",
++    "enabled": true,
++    "visible": true,
++    "interval": 15000,
++    "name": "engineFuelRate",
++    "description": "Engine Fuel Rate",
++    "icon": "fuel",
++    "unit": "L/h",
++    "deviceClass": "",
++    "measurement": true,
++    "diagnostic": false,
++    "pid": {
++      "service": 1,
++      "pid": 94,
++      "header": 0,
++      "numResponses": 1,
++      "numExpectedBytes": 2,
++      "scaleFactor": "1.0 / 20.0"
++    },
++    "value": {
++      "format": "%4.2f"
++    }
++  },
++  {
++    "type": 1,
++    "valueType": "bool",
++    "enabled": true,
++    "visible": true,
++    "interval": 5000,
++    "name": "engineRunning",
++    "description": "Engine Running",
++    "icon": "engine",
++    "unit": "",
++    "deviceClass": "",
++    "measurement": false,
++    "diagnostic": false,
++    "expr": "max($batteryVoltage, 13) - 13",
++    "value": {
++      "format": "%d"
++    }
++  }
++]
+diff --git a/platformio.ini b/platformio.ini
+index e76ca91..51cdf36 100644
+--- a/platformio.ini
++++ b/platformio.ini
+@@ -9,6 +9,7 @@
+ ; https://docs.platformio.org/page/projectconf.html
+ 
+ [platformio]
++default_envs = ESP32S3_N16R8_BLE
+ 
+ ; default_envs = SIM800L_IP5306_VERSION_20190610
+ ; default_envs = SIM800L_AXP192_VERSION_20200327
+@@ -292,4 +293,29 @@ build_flags = ${esp32s3_base.build_flags}
+               -DUSE_BLE
+               -DARDUINO_USB_CDC_ON_BOOT=0
+               -DARDUINO_RUNNING_CORE=1
+-              -DARDUINO_EVENT_RUNNING_CORE=1
+\ No newline at end of file
++              -DARDUINO_EVENT_RUNNING_CORE=1
++
++[env:ESP32S3_N16R8_BLE]
++extends = esp32s3_base
++board = esp32-s3-devkitc-1
++upload_speed = 921600
++board_build.flash_mode = dio
++board_build.flash_size = 16MB
++board_build.arduino.memory_type = dio_opi
++board_upload.flash_size = 16MB
++board_build.partitions = partition-custom-ota-16m.csv
++build_type = release
++lib_ldf_mode = deep+
++lib_deps = ${esp32s3_base.lib_deps}
++           h2zero/NimBLE-Arduino @ 2.3.7
++           adlerre/BLESerial @ 1.0.0
++build_flags = ${esp32s3_base.build_flags}
++              -DNO_MODEM
++              -DNO_GPS
++              -DUSE_BLE
++              -DARDUINO_USB_MODE=1
++              -DARDUINO_USB_CDC_ON_BOOT=1
++              -DARDUINO_RUNNING_CORE=1
++              -DARDUINO_EVENT_RUNNING_CORE=1
++              -DCONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL=1
++              
+diff --git a/src/OBDState.cpp b/src/OBDState.cpp
+index 1712ab6..9871a48 100644
+--- a/src/OBDState.cpp
++++ b/src/OBDState.cpp
+@@ -18,6 +18,8 @@
+ #include "OBDState.h"
+ 
+ #include <ExprParser.h>
++#include <cctype>
++#include <cstdlib>
+ 
+ #include "obd.h"
+ 
+@@ -29,6 +31,48 @@ void OBDState::operator delete(void *ptr) {
+     heap_caps_free(ptr);
+ }
+ 
++static bool parsePidPayload(const char *payload,
++                            const uint8_t service,
++                            const uint16_t pid,
++                            const uint8_t numExpectedBytes,
++                            uint64_t &rawValue) {
++    if (payload == nullptr || numExpectedBytes == 0) {
++        return false;
++    }
++
++    char hex[257] = {'\0'};
++    size_t hexLen = 0;
++    for (const char *p = payload; *p != '\0' && hexLen < sizeof(hex) - 1; ++p) {
++        if (isxdigit(static_cast<unsigned char>(*p))) {
++            hex[hexLen++] = static_cast<char>(toupper(static_cast<unsigned char>(*p)));
++        }
++    }
++
++    char marker[5] = {'\0'};
++    snprintf(marker, sizeof(marker), "%02X%02X", service + 0x40, pid & 0xFF);
++    const size_t neededLen = strlen(marker) + (numExpectedBytes * 2);
++    if (hexLen < neededLen) {
++        return false;
++    }
++
++    for (size_t i = 0; i + neededLen <= hexLen; ++i) {
++        if (strncmp(hex + i, marker, strlen(marker)) != 0) {
++            continue;
++        }
++
++        rawValue = 0;
++        size_t pos = i + strlen(marker);
++        for (uint8_t byteIndex = 0; byteIndex < numExpectedBytes; ++byteIndex) {
++            char byteText[3] = {hex[pos], hex[pos + 1], '\0'};
++            rawValue = (rawValue << 8) | strtoul(byteText, nullptr, 16);
++            pos += 2;
++        }
++        return true;
++    }
++
++    return false;
++}
++
+ OBDState::~OBDState() {
+     if (payload) free(payload);
+ }
+@@ -128,9 +172,15 @@ uint32_t OBDState::supportedPIDs(const uint8_t &service, const uint16_t &pid) co
+ 
+ bool OBDState::isPIDSupported(const uint8_t &service, const uint16_t &pid) const {
+     if (service >= 0x01 && service <= 0x0A) {
++        const uint8_t pidInterval = (pid / PID_INTERVAL_OFFSET) * PID_INTERVAL_OFFSET;
++        const uint8_t relativePid = pid - pidInterval;
++        if (relativePid == 0) {
++            return true;
++        }
++
+         const uint32_t response = supportedPIDs(service, pid);
+         if (elm327->nb_rx_state == ELM_SUCCESS) {
+-            return ((response >> (32 - pid)) & 0x1);
++            return ((response >> (32 - relativePid)) & 0x1);
+         }
+ 
+         return false;
+@@ -209,6 +259,18 @@ bool OBDState::isEnabled() const {
+     return this->enabled;
+ }
+ 
++uint8_t OBDState::getService() const {
++    return this->service;
++}
++
++uint16_t OBDState::getPID() const {
++    return this->pid;
++}
++
++int8_t OBDState::getUpdateStatus() const {
++    return this->updateStatus;
++}
++
+ void OBDState::setEnabled(bool enable) {
+     this->enabled = enable;
+ }
+@@ -402,8 +464,13 @@ template<typename T>
+ void TypedOBDState<T>::readValue() {
+     if (elm327 != nullptr && elm327->elm_port && this->type == obd::READ) {
+         if (!this->init && this->readFunction == nullptr) {
+-            this->supported = this->checkPidSupport && isPIDSupported(this->service, this->pid) || true;
+-            this->init = this->checkPidSupport && elm327->nb_rx_state == ELM_SUCCESS || true;
++            if (this->checkPidSupport && this->pid % PID_INTERVAL_OFFSET != 0) {
++                this->supported = isPIDSupported(this->service, this->pid);
++                this->init = elm327->nb_rx_state == ELM_SUCCESS;
++            } else {
++                this->supported = true;
++                this->init = true;
++            }
+         } else if (this->readFunction != nullptr) {
+             this->init = true;
+         }
+@@ -426,26 +493,32 @@ void TypedOBDState<T>::readValue() {
+                 this->oldValue = this->value;
+                 this->previousUpdate = this->lastUpdate;
+                 this->processing = true;
++                elm327->nb_rx_state = ELM_GETTING_MSG;
+             }
+ 
+-            T value = static_cast<T>(this->readFunction != nullptr
+-                                         ? this->readFunction()
+-                                         : this->responseFormat == obd::PREDEFINED
+-                                               ? elm327->processPID(this->service, this->pid, this->numResponses,
+-                                                                    this->numExpectedBytes,
+-                                                                    this->scaleFactor, this->bias)
+-                                               : conditionResponse(
+-                                                   elm327->processPID(
+-                                                       this->service,
+-                                                       this->pid,
+-                                                       this->numResponses,
+-                                                       this->numExpectedBytes,
+-                                                       1,
+-                                                       0
+-                                                   ),
+-                                                   this->responseFormat, this->scaleFactor, this->bias
+-                                               )
+-            );
++            T value = 0;
++
++            if (this->readFunction != nullptr) {
++                value = static_cast<T>(this->readFunction());
++            } else {
++                char command[8] = {'\0'};
++                snprintf(command, sizeof(command), "%02X%02X", this->service, this->pid & 0xFF);
++                const int8_t commandStatus = elm327->sendCommand_Blocking(command);
++                uint64_t rawValue = 0;
++                if (commandStatus == ELM_SUCCESS &&
++                    parsePidPayload(elm327->payload, this->service, this->pid, this->numExpectedBytes, rawValue)) {
++                    const double scaledValue = this->responseFormat == obd::PREDEFINED
++                                                   ? (static_cast<double>(rawValue) * this->scaleFactor) + this->bias
++                                                   : conditionResponse(static_cast<double>(rawValue),
++                                                                       this->responseFormat,
++                                                                       this->scaleFactor,
++                                                                       this->bias);
++                    value = static_cast<T>(scaledValue);
++                    elm327->nb_rx_state = ELM_SUCCESS;
++                } else {
++                    elm327->nb_rx_state = commandStatus == ELM_SUCCESS ? ELM_NO_DATA : commandStatus;
++                }
++            }
+ 
+             if (elm327->nb_rx_state == ELM_SUCCESS) {
+                 this->setPayload(elm327->payload);
+@@ -464,12 +537,13 @@ void TypedOBDState<T>::readValue() {
+                 this->processing = false;
+                 this->updateStatus = elm327->nb_rx_state;
+             } else if (elm327->nb_rx_state != ELM_GETTING_MSG) {
++                this->lastUpdate = millis();
+                 this->processing = false;
+                 this->updateStatus = elm327->nb_rx_state;
+             }
+ 
+             if (this->header > 0 && this->setHeader && !this->processing) {
+-                if (elm327->sendCommand_Blocking(SET_ALL_TO_DEFAULTS) == ELM_SUCCESS) {
++                if (elm327->sendCommand_Blocking("AT SH 7DF") == ELM_SUCCESS) {
+                     if (strstr(elm327->payload, RESPONSE_OK) != nullptr) {
+                         this->setHeader = false;
+                     }
+diff --git a/src/OBDState.h b/src/OBDState.h
+index b9b4030..0c83ed8 100644
+--- a/src/OBDState.h
++++ b/src/OBDState.h
+@@ -160,6 +160,12 @@ public:
+ 
+     bool isEnabled() const;
+ 
++    uint8_t getService() const;
++
++    uint16_t getPID() const;
++
++    int8_t getUpdateStatus() const;
++
+     void setEnabled(bool enable);
+ 
+     virtual OBDState *withEnabled(bool enable);
+diff --git a/src/gsm.cpp b/src/gsm.cpp
+index ccf9f8e..644bd56 100644
+--- a/src/gsm.cpp
++++ b/src/gsm.cpp
+@@ -18,9 +18,11 @@
+ 
+ #include <settings.h>
+ 
++#ifndef NO_MODEM
+ #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
+ #include "device_sim800.h"
+ #endif
++#endif
+ 
+ #if defined(LILYGO_GPS_SHIELD)
+ #ifndef SerialGPS
+@@ -34,6 +36,11 @@ TinyGPSPlus gps;
+ 
+ #include "soc/adc_periph.h"
+ 
++#ifdef NO_MODEM
++#define WIFI_CONNECT_TIMEOUT_MS     8000UL
++#define WIFI_RECONNECT_INTERVAL_MS  10000UL
++#endif
++
+ int GSM::convertSQToRSSI(int signalQuality) {
+     if (signalQuality > 0 && signalQuality <= 32) {
+         return (111 - signalQuality * 2 - 2) * -1;
+@@ -200,9 +207,16 @@ void GSM::ulpPrepareSleep() {
+ #endif
+ }
+ 
+-GSM::GSM(Stream &stream) : stream(stream), modem(TinyGsm(stream)) {
++GSM::GSM(Stream &stream) : stream(stream)
++#ifndef NO_MODEM
++    , modem(TinyGsm(stream))
++#endif
++{
+     ipAddress = "";
+     reconnectAttempts = 0;
++#ifdef NO_MODEM
++    lastNetworkAttempt = 0;
++#endif
+ #if defined(LILYGO_T_A7670) or defined(LILYGO_T_CALL_A7670_V1_0) or defined(LILYGO_T_CALL_A7670_V1_1) or defined(LILYGO_T_A7608X) or defined(LILYGO_SIM7000G) or defined(LILYGO_SIM7070G)
+     networkMode = MODEM_NETWORK_AUTO;
+ #endif
+@@ -214,10 +228,15 @@ Client *GSM::getClient(const bool useSecure) {
+             free(client);
+         }
+         if (secureClient == nullptr) {
++#ifdef NO_MODEM
++            secureClient = new WiFiClientSecure();
++            secureClient->setInsecure();
++#else
+ #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
+             Serial.println("WARNING: SIM800 devices supports only SSL 2/3 and TLS 1.0");
+ #endif
+             secureClient = new TinyGsmClientSecure(modem);
++#endif
+         }
+ 
+         return secureClient;
+@@ -227,12 +246,19 @@ Client *GSM::getClient(const bool useSecure) {
+         free(secureClient);
+     }
+     if (client == nullptr) {
++#ifdef NO_MODEM
++        client = new WiFiClient();
++#else
+         client = new TinyGsmClient(modem);
++#endif
+     }
+     return client;
+ }
+ 
+ void GSM::resetModem() {
++#ifdef NO_MODEM
++    reconnectAttempts = 0;
++#else
+ #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
+     digitalWrite(MODEM_POWER_ON, LOW);
+     delay(1000);
+@@ -267,6 +293,7 @@ void GSM::resetModem() {
+         }
+     }
+     Serial.println("...success");
++#endif
+ }
+ 
+ std::string GSM::getIpAddress() {
+@@ -274,11 +301,15 @@ std::string GSM::getIpAddress() {
+ }
+ 
+ bool GSM::isUseGPRS() {
++#ifdef NO_MODEM
++    return false;
++#else
+ #if TINY_GSM_USE_GPRS
+     return true;
+ #else
+     return false;
+ #endif
++#endif
+ }
+ 
+ void GSM::setNetworkMode(int mode) {
+@@ -286,6 +317,33 @@ void GSM::setNetworkMode(int mode) {
+ }
+ 
+ void GSM::connectToNetwork() {
++#ifdef NO_MODEM
++    if (Settings.WiFi.getAPSSID().isEmpty()) {
++        Serial.println("No WiFi SSID was configured");
++        return;
++    }
++
++    Serial.printf("Connecting WiFi STA to %s...", Settings.WiFi.getAPSSID().c_str());
++    WiFi.mode(WIFI_AP_STA);
++    WiFi.setSleep(true);
++    WiFi.setAutoReconnect(true);
++    WiFi.persistent(false);
++    WiFi.begin(Settings.WiFi.getAPSSID().c_str(), Settings.WiFi.getAPPassword().c_str());
++    lastNetworkAttempt = millis();
++
++    const unsigned long start = millis();
++    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
++        delay(500);
++        Serial.print(".");
++    }
++
++    if (WiFi.status() == WL_CONNECTED) {
++        ipAddress = WiFi.localIP().toString().c_str();
++        Serial.printf("...success\nIP Address: %s\n", ipAddress.c_str());
++    } else {
++        Serial.println("...fail");
++    }
++#else
+     Serial.println("Start modem...");
+ 
+ #if defined(SIM800L_IP5306_VERSION_20190610) or defined(SIM800L_AXP192_VERSION_20200327) or defined(SIM800C_AXP192_VERSION_20200609) or defined(SIM800L_IP5306_VERSION_20200811)
+@@ -411,18 +469,64 @@ restart:
+         // currently not enough space for that
+         // updateLocaleTime();
+     }
++#endif
+ }
+ 
+ void GSM::powerOff() {
++#ifdef NO_MODEM
++    WiFi.disconnect(false);
++#else
+     modem.poweroff();
+ 
+     // check if not response
+     while (modem.testAT()) {
+         delay(500);
+     }
++#endif
+ }
+ 
+ bool GSM::checkNetwork(bool resetConnection) {
++#ifdef NO_MODEM
++    if (Settings.WiFi.getAPSSID().isEmpty()) {
++        return false;
++    }
++
++    if (resetConnection || WiFi.status() != WL_CONNECTED) {
++        if (!resetConnection && lastNetworkAttempt != 0 && millis() - lastNetworkAttempt < WIFI_RECONNECT_INTERVAL_MS) {
++            return false;
++        }
++
++        Serial.println("WiFi disconnected");
++        WiFi.mode(WIFI_AP_STA);
++        WiFi.setSleep(true);
++        WiFi.setAutoReconnect(true);
++        WiFi.persistent(false);
++        if (resetConnection) {
++            WiFi.disconnect(false);
++            delay(200);
++        }
++        WiFi.begin(Settings.WiFi.getAPSSID().c_str(), Settings.WiFi.getAPPassword().c_str());
++        lastNetworkAttempt = millis();
++
++        const unsigned long start = millis();
++        while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
++            delay(500);
++        }
++
++        if (WiFi.status() != WL_CONNECTED) {
++            ++reconnectAttempts;
++            Serial.printf("WiFi reconnect failed (%u), retry in %lus\n",
++                          reconnectAttempts,
++                          WIFI_RECONNECT_INTERVAL_MS / 1000UL);
++            return false;
++        }
++
++        reconnectAttempts = 0;
++        ipAddress = WiFi.localIP().toString().c_str();
++        Serial.printf("WiFi reconnected: %s\n", ipAddress.c_str());
++    }
++    return true;
++#else
+     // Make sure we're still registered on the network
+     if (!modem.isNetworkConnected() || resetConnection) {
+         Serial.println("Network disconnected");
+@@ -484,10 +588,15 @@ bool GSM::checkNetwork(bool resetConnection) {
+         }
+     }
+     return true;
++#endif
+ }
+ 
+ bool GSM::isNetworkConnected() {
++#ifdef NO_MODEM
++    return WiFi.status() == WL_CONNECTED;
++#else
+     return modem.isNetworkConnected();
++#endif
+ }
+ 
+ // bool GSM::updateLocaleTime() {
+@@ -520,29 +629,42 @@ bool GSM::isNetworkConnected() {
+ // }
+ 
+ short int GSM::getSignalQuality() {
++#ifdef NO_MODEM
++    return WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : SQ_NOT_KNOWN;
++#else
+     if (isUseGPRS()) {
+         return modem.getSignalQuality();
+     }
+     return 0;
++#endif
+ }
+ 
+ bool GSM::hasGSMLocation() {
++#ifdef NO_GPS
++    return false;
++#else
+ #if defined TINY_GSM_MODEM_HAS_GSM_LOCATION
+     return true;
+ #else
+     return false;
+ #endif
++#endif
+ }
+ 
+ bool GSM::hasGPSLocation() {
++#ifdef NO_GPS
++    return false;
++#else
+ #if defined(TINY_GSM_MODEM_HAS_GPS) || defined(LILYGO_GPS_SHIELD)
+     return true;
+ #else
+     return false;
+ #endif
++#endif
+ }
+ 
+ void GSM::enableGPS() {
++#ifndef NO_GPS
+ #if defined TINY_GSM_MODEM_HAS_GPS
+ #if !defined(TINY_GSM_MODEM_SARAR5) // not needed for this module
+     Serial.print("Enabling GPS/GNSS/GLONASS...");
+@@ -556,6 +678,7 @@ void GSM::enableGPS() {
+ #elif defined LILYGO_GPS_SHIELD
+     SerialGPS.begin(9600, SERIAL_8N1, BOARD_GPS_RX_PIN, BOARD_GPS_TX_PIN);
+ #endif
++#endif
+ }
+ 
+ bool GSM::checkGPS() {
+diff --git a/src/gsm.h b/src/gsm.h
+index 65fd23f..bf73ae0 100644
+--- a/src/gsm.h
++++ b/src/gsm.h
+@@ -17,6 +17,11 @@
+ #pragma once
+ #include <Arduino.h>
+ 
++#ifdef NO_MODEM
++#include <WiFi.h>
++#include <WiFiClient.h>
++#include <WiFiClientSecure.h>
++#else
+ // Set serial for AT commands (to the module)
+ // Use Hardware Serial on Mega, Leonardo, Micro
+ #define SerialAT Serial1
+@@ -45,6 +50,7 @@
+ #elif defined(WS_A7670E) or defined(WS_A7670E_R2)
+ #include "device_ws.h"
+ #endif
++#endif
+ 
+ #if defined(BOARD_BAT_ADC_PIN) or defined(MAX17048_I2C_ADDRESS)
+ #define DEVICE_HAS_BATTERY      true
+@@ -86,9 +92,17 @@ class GSM {
+     std::string ipAddress;
+     unsigned int reconnectAttempts;
+     int networkMode;
++#ifdef NO_MODEM
++    unsigned long lastNetworkAttempt;
++#endif
+ 
++#ifdef NO_MODEM
++    WiFiClient *client = nullptr;
++    WiFiClientSecure *secureClient = nullptr;
++#else
+     TinyGsmClient *client = nullptr;
+     TinyGsmClientSecure *secureClient = nullptr;
++#endif
+ 
+     /**
+      * Returns the ADC index for given GPIO.
+@@ -118,7 +132,9 @@ class GSM {
+ 
+ public:
+     Stream &stream;
++#ifndef NO_MODEM
+     TinyGsm modem;
++#endif
+ 
+     /**
+      * Convert signal quality value to RSSI
+diff --git a/src/main.cpp b/src/main.cpp
+index 63868bb..7378b8f 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -19,11 +19,22 @@
+ #include <WiFi.h>
+ #include <atomic>
+ 
++#ifdef USE_BLE
++
++#if !defined(CONFIG_BT_ENABLED)
++#error Bluetooth is not enabled
++#endif
++
++#else
++
+ #if !defined(CONFIG_BT_ENABLED) || !defined(CONFIG_BLUEDROID_ENABLED)
+-#error Bluetooth is not enabled! Please run `make menuconfig` to and enable it
++#error Bluetooth is not enabled
++#endif
++
++#if !defined(CONFIG_BT_SPP_ENABLED)
++#error Serial Bluetooth not available
+ #endif
+-#if !defined(CONFIG_BT_SPP_ENABLED) && !defined(USE_BLE)
+-#error Serial Bluetooth not available or not enabled. It is only available for the ESP32 chip.
++
+ #endif
+ 
+ #ifndef BUILD_GIT_BRANCH
+@@ -56,12 +67,14 @@
+ #define HAT_T_CLEAR_DTC         "clearDTC"
+ 
+ #include <numeric>
++#include <algorithm>
+ 
+ #include "settings.h"
+ #include "helper.h"
+ #include "obd.h"
+ #include "gsm.h"
+ #include "http.h"
++#include "esp_task_wdt.h"
+ 
+ HTTPServer server(80);
+ 
+@@ -74,8 +87,12 @@ HTTPServer server(80);
+ StreamDebugger debugger(SerialAT, Serial);
+ GSM gsm(debugger);
+ #else
++#ifdef NO_MODEM
++GSM gsm(Serial);
++#else
+ GSM gsm(SerialAT);
+ #endif
++#endif
+ 
+ MQTT mqtt = MQTT();
+ 
+@@ -118,6 +135,18 @@ std::atomic_bool clearDTC{false};
+ TaskHandle_t outputTaskHdl;
+ TaskHandle_t stateTaskHdl;
+ 
++constexpr unsigned long OBD_RECONNECT_INITIAL_MS = 5000UL;
++constexpr unsigned long OBD_RECONNECT_MAX_MS = 300000UL;
++constexpr unsigned long MQTT_RECONNECT_INITIAL_MS = 5000UL;
++constexpr unsigned long MQTT_RECONNECT_MAX_MS = 120000UL;
++constexpr unsigned long APP_WATCHDOG_TIMEOUT_SEC = 90UL;
++constexpr int MQTT_CONNECT_TIMEOUT_MS = 5000;
++
++std::atomic<unsigned long> nextOBDReconnect{0};
++std::atomic<unsigned long> obdReconnectDelay{OBD_RECONNECT_INITIAL_MS};
++std::atomic<unsigned long> nextMQTTReconnect{0};
++std::atomic<unsigned long> mqttReconnectDelay{MQTT_RECONNECT_INITIAL_MS};
++
+ size_t getESPHeapSize() {
+     return heap_caps_get_free_size(MALLOC_CAP_8BIT);
+ }
+@@ -126,7 +155,9 @@ void deepSleep(const int sec) {
+     log_d("Prepare nap...");
+     WiFi.disconnect(true);
+     OBD.end();
++    #ifndef NO_MODEM
+     gsm.powerOff();
++    #endif
+     if (outputTaskHdl != nullptr) {
+         vTaskDelete(outputTaskHdl);
+     }
+@@ -199,7 +230,11 @@ void startWiFiAP() {
+ 
+     WiFi.disconnect(true);
+ 
++#ifdef NO_MODEM
++    WiFi.mode(WIFI_AP_STA);
++#else
+     WiFi.mode(WIFI_AP);
++#endif
+ 
+     WiFi.onEvent(WiFiAPStart, WiFiEvent_t::ARDUINO_EVENT_WIFI_AP_START);
+     WiFi.onEvent(WiFiAPStop, WiFiEvent_t::ARDUINO_EVENT_WIFI_AP_STOP);
+@@ -207,6 +242,10 @@ void startWiFiAP() {
+     WiFi.onEvent(WiFiAPStationDisconnected, WiFiEvent_t::ARDUINO_EVENT_WIFI_AP_STADISCONNECTED);
+ 
+     String ssid = Settings.WiFi.getAPSSID();
++#ifdef NO_MODEM
++    ssid = "OBD2-MQTT-" + String(stripChars(WiFi.macAddress().c_str()).c_str());
++    WiFi.softAP(ssid.c_str(), "obd2mqtt");
++#else
+     if (ssid.isEmpty()) {
+         ssid = "OBD2-MQTT-" + String(stripChars(WiFi.macAddress().c_str()).c_str());
+         Settings.WiFi.setAPSSID(ssid.c_str());
+@@ -215,6 +254,7 @@ void startWiFiAP() {
+         ssid.c_str(),
+         Settings.WiFi.getAPPassword()
+     );
++#endif
+ }
+ 
+ void startHttpServer() {
+@@ -313,16 +353,27 @@ void startHttpServer() {
+         wifiInfo["SSID"] = WiFi.softAPSSID();
+         wifiInfo["ip"] = WiFi.softAPIP().toString();
+         wifiInfo["mac"] = WiFi.macAddress();
++#ifdef NO_MODEM
++        wifiInfo["staConnected"] = WiFi.status() == WL_CONNECTED;
++        wifiInfo["staSSID"] = WiFi.SSID();
++        wifiInfo["staIP"] = WiFi.localIP().toString();
++        wifiInfo["rssi"] = WiFi.RSSI();
++#endif
+ 
+         serializeJson(wifiInfo, payload);
+ 
+         request->send(200, MIME_TYPE_JSON, payload.c_str());
+     });
+-
+     server.on("/api/modem", HTTP_GET, [](AsyncWebServerRequest *request) {
+         std::string payload;
+         JsonDocument modemInfo;
+ 
++#ifdef NO_MODEM
++        modemInfo["name"] = "WiFi STA";
++        modemInfo["info"] = WiFi.status() == WL_CONNECTED ? "connected" : "disconnected";
++        modemInfo["signalQuality"] = WiFi.RSSI();
++        modemInfo["ip"] = WiFi.localIP().toString();
++#else
+         modemInfo["name"] = gsm.modem.getModemName();
+         modemInfo["info"] = gsm.modem.getModemInfo();
+         modemInfo["signalQuality"] = gsm.modem.getSignalQuality();
+@@ -331,6 +382,7 @@ void startHttpServer() {
+         modemInfo["IMSI"] = gsm.modem.getIMSI();
+         modemInfo["CCID"] = gsm.modem.getSimCCID();
+         modemInfo["operator"] = gsm.modem.getOperator();
++#endif
+ 
+         serializeJson(modemInfo, payload);
+ 
+@@ -369,6 +421,8 @@ void startHttpServer() {
+ void onOBDConnected() {
+     obdConnected = true;
+     obdConnectErrors = 0;
++    obdReconnectDelay = OBD_RECONNECT_INITIAL_MS;
++    nextOBDReconnect = 0;
+ }
+ 
+ void onOBDConnectError() {
+@@ -381,6 +435,20 @@ void onOBDConnectError() {
+ #endif
+ }
+ 
++void scheduleNextOBDReconnect() {
++    const unsigned long delayMs = obdReconnectDelay.load();
++    nextOBDReconnect = millis() + delayMs;
++    obdReconnectDelay = std::min(delayMs * 2, OBD_RECONNECT_MAX_MS);
++    DEBUG_PORT.printf("Next OBD BLE reconnect in %lus\n", delayMs / 1000UL);
++}
++
++void scheduleNextMQTTReconnect() {
++    const unsigned long delayMs = mqttReconnectDelay.load();
++    nextMQTTReconnect = millis() + delayMs;
++    mqttReconnectDelay = std::min(delayMs * 2, MQTT_RECONNECT_MAX_MS);
++    DEBUG_PORT.printf("Next MQTT reconnect in %lus\n", delayMs / 1000UL);
++}
++
+ #ifdef USE_BLE
+ void onBLEDevicesDiscovered(BLEScanResultsSet *btDeviceList) {
+     JsonDocument devices;
+@@ -548,9 +616,6 @@ bool sendStates(std::vector<OBDState *> &states, bool allSendsSuccessed) {
+         for (auto &state: states) {
+             const size_t len = OBD.getPayloadLength() < 64 ? 64 : OBD.getPayloadLength() + 1;
+             char tmp_char[len];
+-            if (state->getLastUpdate() + state->getUpdateInterval() > millis()) {
+-                continue;
+-            }
+ 
+             if (state->valueType() == OBD_STATE_TYPE_INT) {
+                 auto *is = reinterpret_cast<OBDStateInt *>(state);
+@@ -569,6 +634,14 @@ bool sendStates(std::vector<OBDState *> &states, bool allSendsSuccessed) {
+                 free(str);
+             }
+ 
++            if (strcmp(state->getName(), "speed") == 0 ||
++                strcmp(state->getName(), "engineCoolantTemp") == 0 ||
++                strcmp(state->getName(), "engineLoad") == 0 ||
++                strcmp(state->getName(), "throttle") == 0 ||
++                strcmp(state->getName(), "batteryVoltage") == 0) {
++                Serial.printf("MQTT state update: %s=%s\n", state->getName(), tmp_char);
++            }
++
+             allSendsSuccessed |= mqtt.sendTopicUpdate(state->getName(), std::string(tmp_char));
+         }
+     } else {
+@@ -708,6 +781,10 @@ bool sendLocationData() {
+     const unsigned long start = millis();
+     bool allSendsSuccessed = false;
+ 
++    if (!GSM::hasGSMLocation() && !GSM::hasGPSLocation()) {
++        return true;
++    }
++
+     consoleSendHeader("location");
+ 
+     if (GSM::hasGSMLocation()) {
+@@ -822,6 +899,7 @@ void mqttSendData() {
+ }
+ 
+ [[noreturn]] void readStatesTask(void *parameters) {
++    esp_task_wdt_add(nullptr);
+     for (;;) {
+         if (!wifiAPInUse) {
+             if (clearDTC) {
+@@ -834,14 +912,24 @@ void mqttSendData() {
+                 clearDTC = false;
+             }
+ 
+-            OBD.loop();
++            if (OBD.connected()) {
++                OBD.loop();
++            } else if (millis() >= nextOBDReconnect) {
++                DEBUG_PORT.println("OBD BLE disconnected; trying reconnect.");
++                if (!OBD.connect()) {
++                    scheduleNextOBDReconnect();
++                }
++            }
+         }
++        esp_task_wdt_reset();
+         delay(10);
+     }
+ }
+ 
+ [[noreturn]] void outputTask(void *parameters) {
++    esp_task_wdt_add(nullptr);
+     unsigned long checkInterval = 0;
++    bool networkWasConnected = gsm.isNetworkConnected();
+     for (;;) {
+         if (!wifiAPInUse) {
+ #if DEVICE_CAN_DEEP_SLEEP && DEVICE_HAS_BATTERY
+@@ -877,16 +965,26 @@ void mqttSendData() {
+ #endif
+ 
+             if (!gsm.checkNetwork()) {
++                networkWasConnected = false;
++                esp_task_wdt_reset();
++                delay(1000);
+                 continue;
+             }
++            if (!networkWasConnected) {
++                DEBUG_PORT.println("WiFi recovered; MQTT reconnect will run now.");
++                nextMQTTReconnect = 0;
++                networkWasConnected = true;
++            }
+ 
+             mqtt.loop();
+ 
++            #ifndef NO_MODEM
+             if ((GSM::hasGSMLocation() || GSM::hasGPSLocation()) && millis() > checkInterval) {
+                 unsigned long start = millis();
+                 bool allReadSuccessed = false;
+ 
+                 DEBUG_PORT.print("Read location...");
++
+                 if (gsm.isNetworkConnected()) {
+                     float gsm_latitude = 0;
+                     float gsm_longitude = 0;
+@@ -917,26 +1015,44 @@ void mqttSendData() {
+                 consoleSendFooter(allReadSuccessed, millis() - start);
+             }
+ 
++            #endif
++
++            #ifndef NO_MODEM
+             if (GSM::isUseGPRS()) {
+                 signalQuality = gsm.getSignalQuality();
+             }
++            #endif
+ 
+             if (!mqtt.connected()) {
+-                auto client_id = String(MQTT_CLIENT_ID) + "-" + stripChars(mqtt.getIdentifier()).c_str();
+-                if (!mqtt.connect(
+-                    client_id.c_str(),
+-                    Settings.MQTT.getHostname().c_str(),
+-                    Settings.MQTT.getPort(),
+-                    Settings.MQTT.getUsername().c_str(),
+-                    Settings.MQTT.getPassword().c_str(),
+-                    static_cast<mqttProtocol>(Settings.MQTT.getProtocol())
+-                )) {
+-                    gsm.checkNetwork(true);
++                if (millis() >= nextMQTTReconnect) {
++                    auto client_id = String(MQTT_CLIENT_ID) + "-" + stripChars(mqtt.getIdentifier()).c_str();
++                    if (mqtt.connect(
++                        client_id.c_str(),
++                        Settings.MQTT.getHostname().c_str(),
++                        Settings.MQTT.getPort(),
++                        Settings.MQTT.getUsername().c_str(),
++                        Settings.MQTT.getPassword().c_str(),
++                        static_cast<mqttProtocol>(Settings.MQTT.getProtocol()),
++                        MQTT_CONNECT_TIMEOUT_MS
++                    )) {
++                        mqttReconnectDelay = MQTT_RECONNECT_INITIAL_MS;
++                        nextMQTTReconnect = 0;
++                    } else {
++                        scheduleNextMQTTReconnect();
++#ifdef NO_MODEM
++                        if (!gsm.isNetworkConnected()) {
++                            gsm.checkNetwork(true);
++                        }
++#else
++                        gsm.checkNetwork(true);
++#endif
++                    }
+                 }
+             } else {
+                 mqttSendData();
+             }
+         }
++        esp_task_wdt_reset();
+         delay(50);
+     }
+ }
+@@ -950,8 +1066,12 @@ String buildIdentifier(const char *devMac) {
+         mID = devMac;
+         if (static_cast<MQTTSettings::MQTTIdentifierType>(Settings.MQTT.getIdType()) ==
+             MQTTSettings::MQTTIdentifierType::MAC_IMEI) {
++#ifdef NO_MODEM
++            mID += "-S3";
++#else
+             mID += "-";
+             mID += gsm.modem.getIMEI().substring(gsm.modem.getIMEI().length() - 4).c_str();
++#endif
+         }
+     }
+     return mID;
+@@ -973,7 +1093,8 @@ void startReadTask() {
+ #else
+         OBD.onDevicesDiscovered(onBTDevicesDiscovered);
+ #endif
+-        OBD.connect();
++        nextOBDReconnect = 0;
++        obdReconnectDelay = OBD_RECONNECT_INITIAL_MS;
+ 
+         xTaskCreatePinnedToCore(readStatesTask, "ReadStatesTask", 9216, nullptr, 1, &stateTaskHdl, 1);
+     }
+@@ -998,16 +1119,7 @@ void setup() {
+     Settings.readSettings(LittleFS);
+     OBD.readStates(LittleFS);
+ 
+-    // disable Watch Dog for Core 0 - should fix crashes
+-    disableCore0WDT();
+-
+-    startWiFiAP();
+-    startHttpServer();
+-
+-    // will be ignored if the device does not support
+-    gsm.setNetworkMode(Settings.Mobile.getNetworkMode());
+-    gsm.connectToNetwork();
+-    gsm.enableGPS();
++    esp_task_wdt_init(APP_WATCHDOG_TIMEOUT_SEC, true);
+ 
+     OBD.onConnected(onOBDConnected);
+     OBD.onConnectError(onOBDConnectError);
+@@ -1016,11 +1128,21 @@ void setup() {
+ 
+     String mID = buildIdentifier(Settings.OBD2.getMAC().c_str());
+     if (!mID.isEmpty()) {
+-        startOutputTask(mID.c_str());
+         startReadTask();
+     } else {
+         startReadTask();
+         mID = buildIdentifier(OBD.getConnectedBTAddress().c_str());
++    }
++
++    startWiFiAP();
++    startHttpServer();
++
++    // will be ignored if the device does not support
++    gsm.setNetworkMode(Settings.Mobile.getNetworkMode());
++    gsm.connectToNetwork();
++    gsm.enableGPS();
++
++    if (!mID.isEmpty()) {
+         startOutputTask(mID.c_str());
+     }
+ }
+diff --git a/src/obd.cpp b/src/obd.cpp
+index 92b75ae..cb43c63 100644
+--- a/src/obd.cpp
++++ b/src/obd.cpp
+@@ -19,8 +19,15 @@
+ 
+ #include <OBDStates.h>
+ #include <ExprParser.h>
++#include <cstdlib>
+ #include "helper.h"
+ 
++static constexpr uint8_t RPM_FAILURES_BEFORE_COOLDOWN = 3;
++static constexpr unsigned long ENGINE_PID_COOLDOWN_MS = 60000UL;
++static constexpr unsigned long COOLDOWN_VOLTAGE_INTERVAL_MS = 10000UL;
++static constexpr unsigned long COOLDOWN_PID_PROBE_INTERVAL_MS = 15000UL;
++static constexpr unsigned long NORMAL_PID_PACING_MS = 350UL;
++
+ OBDClass::OBDClass() : OBDStates(&elm327), elm327() {
+     protocol = AUTOMATIC;
+ 
+@@ -311,7 +318,10 @@ T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
+         state
+                 ->withReadFuncName("batteryVoltage")
+                 ->withReadFunc([&]() {
+-                    return elm327.batteryVoltage();
++                    if (elm327.sendCommand_Blocking(READ_VOLTAGE) == ELM_SUCCESS) {
++                        return static_cast<float>(strtof(elm327.payload, nullptr));
++                    }
++                    return 0.0F;
+                 });
+     }
+ 
+@@ -445,32 +455,105 @@ BTScanResults *OBDClass::discoverBtDevices() {
+ #endif
+ 
+ #ifdef USE_BLE
++static BLEScanResultsSet rawBleDeviceList;
++
++class RawBLEAdvertisedDeviceCallbacks final : public NimBLEScanCallbacks {
++public:
++    void onResult(const NimBLEAdvertisedDevice *pDevice) override {
++        if (pDevice != nullptr && rawBleDeviceList.add(*pDevice)) {
++            Serial.printf(">>>>>>>>>>>Found BLE device: %s\n", pDevice->toString().c_str());
++        }
++    }
++};
++
++static void dumpRemoteBLEGatt(const NimBLEAddress &addr) {
++    Serial.printf("========== GATT explorer: %s ==========\n", addr.toString().c_str());
++
++    NimBLEClient *client = NimBLEDevice::createClient();
++    if (client == nullptr) {
++        Serial.println("GATT explorer: failed to create BLE client");
++        return;
++    }
++
++    client->setConnectionParams(12, 12, 0, 150);
++    client->setConnectTimeout(5 * 1000);
++
++    if (!client->connect(addr)) {
++        Serial.println("GATT explorer: connect failed");
++        NimBLEDevice::deleteClient(client);
++        return;
++    }
++
++    Serial.printf("GATT explorer: connected, RSSI %d\n", client->getRssi());
++    const std::vector<NimBLERemoteService *> &services = client->getServices(true);
++    Serial.printf("GATT explorer: services found %u\n", static_cast<unsigned int>(services.size()));
++
++    for (const auto *service: services) {
++        if (service == nullptr) {
++            continue;
++        }
++
++        Serial.printf("Service %s handle %u-%u\n",
++                      service->getUUID().toString().c_str(),
++                      service->getStartHandle(),
++                      service->getEndHandle());
++
++        const std::vector<NimBLERemoteCharacteristic *> &characteristics = service->getCharacteristics(true);
++        for (const auto *characteristic: characteristics) {
++            if (characteristic == nullptr) {
++                continue;
++            }
++
++            Serial.printf("  Char %s handle %u props:%s%s%s%s%s\n",
++                          characteristic->getUUID().toString().c_str(),
++                          characteristic->getHandle(),
++                          characteristic->canRead() ? " read" : "",
++                          characteristic->canWrite() ? " write" : "",
++                          characteristic->canWriteNoResponse() ? " write_nr" : "",
++                          characteristic->canNotify() ? " notify" : "",
++                          characteristic->canIndicate() ? " indicate" : "");
++        }
++    }
++
++    client->disconnect();
++    NimBLEDevice::deleteClient(client);
++    Serial.println("=======================================");
++}
++
+ void OBDClass::onBLEDisconnect() {
+     Serial.println("Bluetooth LE disconnected.");
+ 
+     if (OBD.initDone && !OBD.stopConnect) {
+-        // FIXME get reconnect working
+-        // OBD.connect(true);
+-        ESP.restart();
++        OBD.elm327.connected = false;
++        OBD.connectedBTAddress.clear();
++        if (OBD.connectErrorCallback) {
++            OBD.connectErrorCallback();
++        }
+     }
+ }
+ 
+ BLEScanResultsSet *OBDClass::discoverBLEDevices() {
+-    serialBLE.discoverClear();
+-
+-    BLEScanResultsSet *bleDeviceList = serialBLE.getScanResults();
++    rawBleDeviceList.clear();
+     Serial.println("Discover Bluetooth LE devices...");
+-    if (serialBLE.discoverAsync([](const NimBLEAdvertisedDevice *pDevice) {
+-        Serial.printf(">>>>>>>>>>>Found a new device: %s\n", pDevice->toString().c_str());
+-    })) {
++    NimBLEScan *pBLEScan = NimBLEDevice::getScan();
++    if (pBLEScan != nullptr) {
++        pBLEScan->stop();
++        pBLEScan->clearResults();
++        pBLEScan->setScanCallbacks(new RawBLEAdvertisedDeviceCallbacks(), false);
++        pBLEScan->setInterval(100);
++        pBLEScan->setWindow(99);
++        pBLEScan->setMaxResults(0);
++        pBLEScan->setActiveScan(true);
++        pBLEScan->start(BT_DISCOVER_TIME, false);
+         delay(BT_DISCOVER_TIME);
+         Serial.print("Stopping discover...");
+-        serialBLE.discoverAsyncStop();
++        pBLEScan->stop();
+         Serial.println("stopped");
+-        delay(5000);
++        delay(1000);
++        Serial.printf("BLE devices found: %d\n", rawBleDeviceList.getCount());
+ 
+-        if (bleDeviceList != nullptr && bleDeviceList->getCount() > 0) {
+-            return bleDeviceList;
++        if (rawBleDeviceList.getCount() > 0) {
++            return &rawBleDeviceList;
+         }
+     }
+ 
+@@ -505,19 +588,32 @@ void OBDClass::end() {
+ #endif
+ }
+ 
+-void OBDClass::connect(bool reconnect) {
++bool OBDClass::connect(bool reconnect) {
+     stopConnect = false;
++    connectedBTAddress.clear();
++    elm327.connected = false;
+ 
+ connect:
+     if (stopConnect || reconnect && !initDone) {
+-        return;
++        return false;
+     }
+ 
+ #ifdef USE_BLE
+-    if (!serialBLE.begin("OBD2MQTT")) {
++    const bool useIosVlinkProfile = devName.equalsIgnoreCase("IOS-Vlink") ||
++                                    devName.equalsIgnoreCase("iOS-Vlink");
++    const bool bleStarted = useIosVlinkProfile
++                            ? serialBLE.begin("OBD2MQTT",
++                                              "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2",
++                                              "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F",
++                                              "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F")
++                            : serialBLE.begin("OBD2MQTT");
++    if (!bleStarted) {
+         Serial.println("========== serialBLE failed!");
+         ESP.restart();
+     }
++    if (useIosVlinkProfile) {
++        Serial.println("Using IOS-Vlink BLE ELM327 profile");
++    }
+ #else
+     if (!serialBt.begin("OBD2MQTT", true)) {
+         Serial.println("========== serialBT failed!");
+@@ -557,6 +653,27 @@ connect:
+                     connectedBTAddress = addr.toString();
+                 }
+             }
++
++            if (!stopConnect && connectedBTAddress.empty()) {
++                Serial.println("No exact BLE name match; trying discovered BLE devices for OBD UART service...");
++                for (int i = 0; !stopConnect && connectedBTAddress.empty() && i < bleDeviceList->getCount(); i++) {
++                    NimBLEAdvertisedDevice *device = bleDeviceList->getDevice(i);
++                    if (device == nullptr) {
++                        continue;
++                    }
++                    addr = NimBLEAddress(device->getAddress());
++                    Serial.printf("trying %s (%s, RSSI %d)\n",
++                                  addr.toString().c_str(),
++                                  device->getName().empty() ? "<no name>" : device->getName().c_str(),
++                                  device->getRSSI());
++                    if (serialBLE.connect(addr)) {
++                        connectedBTAddress = addr.toString();
++                    }
++                    if (connectedBTAddress.empty()) {
++                        serialBLE.disconnect();
++                    }
++                }
++            }
+         }
+ #else
+         BTScanResults *btDeviceList = discoverBtDevices();
+@@ -607,9 +724,18 @@ connect:
+         NimBLEAddress addr = NimBLEAddress(mac, 0);
+ 
+         if (!stopConnect && addr) {
+-            Serial.printf("connecting to %s\n", addr.toString().c_str());
+-            if (serialBLE.connect(addr)) {
+-                connectedBTAddress = addr.toString();
++            if (useIosVlinkProfile) {
++                Serial.println("Trying NimBLE VLink stream: IOS-Vlink E781/BEF8");
++                if (serialBLE.connect(addr)) {
++                    connectedBTAddress = addr.toString();
++                }
++            } else {
++                Serial.printf("connecting to %s\n", addr.toString().c_str());
++                if (serialBLE.connect(addr)) {
++                    connectedBTAddress = addr.toString();
++                } else {
++                    serialBLE.disconnect();
++                }
+             }
+         }
+ #else
+@@ -636,9 +762,9 @@ connect:
+     }
+ 
+ #ifdef USE_BLE
+-    if (!stopConnect && !serialBLE.isClosed() && serialBLE.connected()) {
++    if (!stopConnect && !connectedBTAddress.empty() && !serialBLE.isClosed() && serialBLE.connected()) {
+         int retryCount = 0;
+-        while (!elm327.begin(serialBLE, debug, 2000, protocol) && retryCount < 3) {
++        while (!elm327.begin(serialBLE, debug, 5000, protocol) && retryCount < 3) {
+             Serial.println("Couldn't connect to OBD scanner - Phase 2");
+             delay(BT_DISCOVER_TIME);
+             retryCount++;
+@@ -646,7 +772,7 @@ connect:
+ #else
+     if (!stopConnect && !serialBt.isClosed() && serialBt.connected()) {
+         int retryCount = 0;
+-        while (!elm327.begin(serialBt, debug, 2000, protocol) && retryCount < 3) {
++        while (!elm327.begin(serialBt, debug, 5000, protocol) && retryCount < 3) {
+             Serial.println("Couldn't connect to OBD scanner - Phase 2");
+             delay(BT_DISCOVER_TIME);
+             retryCount++;
+@@ -662,8 +788,7 @@ connect:
+     }
+ 
+     if (!elm327.connected) {
+-        delay(BT_DISCOVER_TIME);
+-        Serial.println("Restarting OBD connect.");
++        Serial.println("OBD connect attempt failed.");
+ #ifdef USE_BLE
+         serialBLE.end();
+ #else
+@@ -672,10 +797,20 @@ connect:
+         if (connectErrorCallback) {
+             connectErrorCallback();
+         }
+-        goto connect;
++        return false;
+     }
+ 
+     Serial.println("Connected to ELM327");
++    elm327.specifyNumResponses = this->specifyNumResponses;
++
++#ifdef USE_BLE
++    if (useIosVlinkProfile && protocol != AUTOMATIC) {
++        char command[8] = {'\0'};
++        snprintf(command, sizeof(command), "AT SP %c", protocol);
++        Serial.printf("Locking IOS-Vlink ELM protocol: %s\n", command);
++        elm327.sendCommand_Blocking(command);
++    }
++#endif
+ 
+     if (connectedCallback) {
+         connectedCallback();
+@@ -690,9 +825,10 @@ connect:
+             Serial.printf("ELM327 protocol: %s\n", protocol.c_str());
+         }
+         setCheckPidSupport(this->checkPidSupport);
+-        elm327.specifyNumResponses = this->specifyNumResponses;
+         initDone = true;
+     }
++
++    return true;
+ }
+ 
+ void OBDClass::loop() {
+@@ -701,6 +837,45 @@ void OBDClass::loop() {
+ #else
+     if (!stopConnect && serialBt && !serialBt.isClosed()) {
+ #endif
++        if (enginePidCooldownUntil > millis()) {
++            if (lastCooldownVoltageRead == 0 || millis() - lastCooldownVoltageRead >= COOLDOWN_VOLTAGE_INTERVAL_MS) {
++                const bool voltageRead = elm327.sendCommand_Blocking(READ_VOLTAGE) == ELM_SUCCESS;
++                lastCooldownVoltageRead = millis();
++                if (voltageRead) {
++                    const float voltage = strtof(elm327.payload, nullptr);
++                    setStateValue("batteryVoltage", voltage);
++                    Serial.printf("Engine PID cooldown active; battery voltage %.2fV\n", voltage);
++                } else {
++                    Serial.println("Engine PID cooldown active; battery voltage unavailable");
++                }
++            }
++            if (lastCooldownPidProbe == 0 || millis() - lastCooldownPidProbe >= COOLDOWN_PID_PROBE_INTERVAL_MS) {
++                lastCooldownPidProbe = millis();
++                probeNextCooldownPid();
++            }
++            delay(500);
++            return;
++        }
++
++        if (enginePidCooldownUntil != 0) {
++            Serial.println("Engine PID cooldown ended; probing RPM before resuming full OBD PID reads.");
++            if (!probeRpmForCooldownExit()) {
++                enginePidCooldownUntil = millis() + ENGINE_PID_COOLDOWN_MS;
++                lastCooldownVoltageRead = 0;
++                lastCooldownPidProbe = 0;
++                cooldownPidProbeIndex = 0;
++                Serial.printf("RPM still unavailable; keeping cooldown for another %lus\n",
++                              ENGINE_PID_COOLDOWN_MS / 1000UL);
++                delay(500);
++                return;
++            }
++            Serial.println("RPM recovered; resuming full OBD PID reads.");
++            enginePidCooldownUntil = 0;
++            lastCooldownVoltageRead = 0;
++            lastCooldownPidProbe = 0;
++            cooldownPidProbeIndex = 0;
++        }
++
+ #ifdef DEBUG_OBDSTATE
+         OBDState *state = nextState();
+         if (state != nullptr && state->getType() == obd::READ && state->getLastUpdate() != -1 && state->isSupported()) {
+@@ -718,13 +893,113 @@ void OBDClass::loop() {
+             }
+         }
+ #else
+-        nextState();
++        OBDState *state = nextState();
+ #endif
++        if (state != nullptr && state->getType() == obd::READ) {
++            if (state->getUpdateStatus() == ELM_SUCCESS) {
++                const char *payload = state->getPayload() != nullptr ? state->getPayload() : "";
++                if (state->valueType() == OBD_STATE_TYPE_INT) {
++                    auto *is = reinterpret_cast<OBDStateInt *>(state);
++                    Serial.printf("OBD PID updated: %s=%d payload=%s\n", state->getName(), is->getValue(), payload);
++                } else if (state->valueType() == OBD_STATE_TYPE_FLOAT) {
++                    auto *fs = reinterpret_cast<OBDStateFloat *>(state);
++                    Serial.printf("OBD PID updated: %s=%4.2f payload=%s\n", state->getName(), fs->getValue(), payload);
++                } else if (state->valueType() == OBD_STATE_TYPE_BOOL) {
++                    auto *bs = reinterpret_cast<OBDStateBool *>(state);
++                    Serial.printf("OBD PID updated: %s=%d payload=%s\n", state->getName(), bs->getValue(), payload);
++                } else {
++                    Serial.printf("OBD PID updated: %s payload=%s\n", state->getName(), payload);
++                }
++            } else if (state->getUpdateStatus() != ELM_GETTING_MSG) {
++                Serial.printf("OBD PID skipped: %s, status %d\n", state->getName(), state->getUpdateStatus());
++            }
++            delay(NORMAL_PID_PACING_MS);
++        }
++        if (state != nullptr && state->getType() == obd::READ &&
++            state->getService() == SERVICE_01 && state->getPID() == ENGINE_RPM) {
++            if (state->getUpdateStatus() == ELM_SUCCESS) {
++                if (rpmFailureCount != 0) {
++                    Serial.println("RPM PID recovered; clearing engine PID cooldown counter.");
++                }
++                rpmFailureCount = 0;
++            } else if (state->getUpdateStatus() == ELM_TIMEOUT || state->getUpdateStatus() == ELM_NO_DATA) {
++                ++rpmFailureCount;
++                Serial.printf("RPM PID failed %u/%u with status %d\n",
++                              rpmFailureCount,
++                              RPM_FAILURES_BEFORE_COOLDOWN,
++                              state->getUpdateStatus());
++                if (rpmFailureCount >= RPM_FAILURES_BEFORE_COOLDOWN) {
++                    rpmFailureCount = 0;
++                    enginePidCooldownUntil = millis() + ENGINE_PID_COOLDOWN_MS;
++                    lastCooldownVoltageRead = 0;
++                    lastCooldownPidProbe = 0;
++                    cooldownPidProbeIndex = 0;
++                    Serial.printf("RPM PID unavailable; pausing engine PID reads for %lus\n",
++                                  ENGINE_PID_COOLDOWN_MS / 1000UL);
++                }
++            }
++        }
+     } else {
+         delay(500);
+     }
+ }
+ 
++void OBDClass::probeNextCooldownPid() {
++    std::vector<OBDState *> cooldownProbeStates{};
++    getStates([](OBDState *state) {
++        return state->isEnabled() &&
++               state->isVisible() &&
++               !state->isDiagnostic() &&
++               state->getType() == obd::READ &&
++               state->getService() == SERVICE_01 &&
++               state->getPID() != ENGINE_RPM &&
++               strcmp(state->getName(), "batteryVoltage") != 0;
++    }, cooldownProbeStates);
++
++    if (cooldownProbeStates.empty()) {
++        return;
++    }
++
++    if (cooldownPidProbeIndex >= cooldownProbeStates.size()) {
++        cooldownPidProbeIndex = 0;
++    }
++
++    OBDState *state = cooldownProbeStates.at(cooldownPidProbeIndex++);
++    Serial.printf("Engine PID cooldown active; probing %s (01%02X)\n",
++                  state->getName(),
++                  state->getPID());
++    state->readValue();
++    if (state->getUpdateStatus() == ELM_SUCCESS) {
++        Serial.printf("Engine PID cooldown probe updated %s\n", state->getName());
++    } else {
++        Serial.printf("Engine PID cooldown probe skipped %s, status %d\n",
++                      state->getName(),
++                      state->getUpdateStatus());
++    }
++}
++
++bool OBDClass::probeRpmForCooldownExit() {
++    std::vector<OBDState *> rpmStates{};
++    getStates([](OBDState *state) {
++        return state->isEnabled() &&
++               state->getType() == obd::READ &&
++               state->getService() == SERVICE_01 &&
++               state->getPID() == ENGINE_RPM;
++    }, rpmStates);
++
++    if (rpmStates.empty()) {
++        return true;
++    }
++
++    OBDState *state = rpmStates.at(0);
++    state->readValue();
++    return state->getUpdateStatus() == ELM_SUCCESS;
++}
++
++bool OBDClass::connected() const {
++    return elm327.connected;
++}
++
+ void OBDClass::onConnected(const std::function<void()> &callback) {
+     connectedCallback = callback;
+ }
+diff --git a/src/obd.h b/src/obd.h
+index 7478fb4..3231ee2 100644
+--- a/src/obd.h
++++ b/src/obd.h
+@@ -16,7 +16,8 @@
+  */
+ #pragma once
+ #ifdef USE_BLE
+-#include <BLESerial.h>
++#include <BLEScanResultsSet.h>
++#include "vlink_ble_stream.h"
+ #else
+ #include <BluetoothSerial.h>
+ #endif
+@@ -37,7 +38,7 @@
+ 
+ #define STATES_FILE          "/states.json"
+ 
+-#define BT_DISCOVER_TIME    10000
++#define BT_DISCOVER_TIME    30000
+ 
+ // https://stackoverflow.com/questions/17170646/what-is-the-best-way-to-get-fuel-consumption-mpg-using-obd2-parameters
+ #define AF_RATIO_GAS        17.2
+@@ -86,7 +87,7 @@ public:
+ 
+ class OBDClass : public OBDStates {
+ #ifdef USE_BLE
+-    BLESerial serialBLE;
++    VLinkBLEStream serialBLE;
+ #else
+     BluetoothSerial serialBt;
+ #endif
+@@ -101,6 +102,11 @@ class OBDClass : public OBDStates {
+     bool checkPidSupport = false;
+     bool debug = false;
+     bool specifyNumResponses = true;
++    uint8_t rpmFailureCount = 0;
++    unsigned long enginePidCooldownUntil = 0;
++    unsigned long lastCooldownVoltageRead = 0;
++    unsigned long lastCooldownPidProbe = 0;
++    size_t cooldownPidProbeIndex = 0;
+ 
+     DTCs dtcs;
+     bool dtcsRead = false;
+@@ -142,6 +148,9 @@ class OBDClass : public OBDStates {
+     template<typename T>
+     T *setFormatFuncByName(const char *funcName, T *state);
+ 
++    void probeNextCooldownPid();
++    bool probeRpmForCooldownExit();
++
+ public:
+     OBDClass();
+ 
+@@ -158,7 +167,9 @@ public:
+ 
+     void end();
+ 
+-    void connect(bool reconnect = false);
++    bool connect(bool reconnect = false);
++
++    bool connected() const;
+ 
+     void loop();
+ 

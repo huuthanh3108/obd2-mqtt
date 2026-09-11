@@ -16,10 +16,18 @@
  */
 
 #include "obd.h"
+#include "debug_log.h"
 
 #include <OBDStates.h>
 #include <ExprParser.h>
+#include <cstdlib>
 #include "helper.h"
+
+static constexpr uint8_t RPM_FAILURES_BEFORE_COOLDOWN = 3;
+static constexpr unsigned long ENGINE_PID_COOLDOWN_MS = 60000UL;
+static constexpr unsigned long COOLDOWN_VOLTAGE_INTERVAL_MS = 10000UL;
+static constexpr unsigned long COOLDOWN_PID_PROBE_INTERVAL_MS = 15000UL;
+static constexpr unsigned long NORMAL_PID_PACING_MS = 350UL;
 
 OBDClass::OBDClass() : OBDStates(&elm327), elm327() {
     protocol = AUTOMATIC;
@@ -311,7 +319,10 @@ T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
         state
                 ->withReadFuncName("batteryVoltage")
                 ->withReadFunc([&]() {
-                    return elm327.batteryVoltage();
+                    if (elm327.sendCommand_Blocking(READ_VOLTAGE) == ELM_SUCCESS) {
+                        return static_cast<float>(strtof(elm327.payload, nullptr));
+                    }
+                    return 0.0F;
                 });
     }
 
@@ -445,32 +456,105 @@ BTScanResults *OBDClass::discoverBtDevices() {
 #endif
 
 #ifdef USE_BLE
+static BLEScanResultsSet rawBleDeviceList;
+
+class RawBLEAdvertisedDeviceCallbacks final : public NimBLEScanCallbacks {
+public:
+    void onResult(const NimBLEAdvertisedDevice *pDevice) override {
+        if (pDevice != nullptr && rawBleDeviceList.add(*pDevice)) {
+            Serial.printf(">>>>>>>>>>>Found BLE device: %s\n", pDevice->toString().c_str());
+        }
+    }
+};
+
+static void dumpRemoteBLEGatt(const NimBLEAddress &addr) {
+    Serial.printf("========== GATT explorer: %s ==========\n", addr.toString().c_str());
+
+    NimBLEClient *client = NimBLEDevice::createClient();
+    if (client == nullptr) {
+        Serial.println("GATT explorer: failed to create BLE client");
+        return;
+    }
+
+    client->setConnectionParams(12, 12, 0, 150);
+    client->setConnectTimeout(5 * 1000);
+
+    if (!client->connect(addr)) {
+        Serial.println("GATT explorer: connect failed");
+        NimBLEDevice::deleteClient(client);
+        return;
+    }
+
+    Serial.printf("GATT explorer: connected, RSSI %d\n", client->getRssi());
+    const std::vector<NimBLERemoteService *> &services = client->getServices(true);
+    Serial.printf("GATT explorer: services found %u\n", static_cast<unsigned int>(services.size()));
+
+    for (const auto *service: services) {
+        if (service == nullptr) {
+            continue;
+        }
+
+        Serial.printf("Service %s handle %u-%u\n",
+                      service->getUUID().toString().c_str(),
+                      service->getStartHandle(),
+                      service->getEndHandle());
+
+        const std::vector<NimBLERemoteCharacteristic *> &characteristics = service->getCharacteristics(true);
+        for (const auto *characteristic: characteristics) {
+            if (characteristic == nullptr) {
+                continue;
+            }
+
+            Serial.printf("  Char %s handle %u props:%s%s%s%s%s\n",
+                          characteristic->getUUID().toString().c_str(),
+                          characteristic->getHandle(),
+                          characteristic->canRead() ? " read" : "",
+                          characteristic->canWrite() ? " write" : "",
+                          characteristic->canWriteNoResponse() ? " write_nr" : "",
+                          characteristic->canNotify() ? " notify" : "",
+                          characteristic->canIndicate() ? " indicate" : "");
+        }
+    }
+
+    client->disconnect();
+    NimBLEDevice::deleteClient(client);
+    Serial.println("=======================================");
+}
+
 void OBDClass::onBLEDisconnect() {
     Serial.println("Bluetooth LE disconnected.");
 
     if (OBD.initDone && !OBD.stopConnect) {
-        // FIXME get reconnect working
-        // OBD.connect(true);
-        ESP.restart();
+        OBD.elm327.connected = false;
+        OBD.connectedBTAddress.clear();
+        if (OBD.connectErrorCallback) {
+            OBD.connectErrorCallback();
+        }
     }
 }
 
 BLEScanResultsSet *OBDClass::discoverBLEDevices() {
-    serialBLE.discoverClear();
-
-    BLEScanResultsSet *bleDeviceList = serialBLE.getScanResults();
+    rawBleDeviceList.clear();
     Serial.println("Discover Bluetooth LE devices...");
-    if (serialBLE.discoverAsync([](const NimBLEAdvertisedDevice *pDevice) {
-        Serial.printf(">>>>>>>>>>>Found a new device: %s\n", pDevice->toString().c_str());
-    })) {
+    NimBLEScan *pBLEScan = NimBLEDevice::getScan();
+    if (pBLEScan != nullptr) {
+        pBLEScan->stop();
+        pBLEScan->clearResults();
+        pBLEScan->setScanCallbacks(new RawBLEAdvertisedDeviceCallbacks(), false);
+        pBLEScan->setInterval(100);
+        pBLEScan->setWindow(99);
+        pBLEScan->setMaxResults(0);
+        pBLEScan->setActiveScan(true);
+        pBLEScan->start(BT_DISCOVER_TIME, false);
         delay(BT_DISCOVER_TIME);
         Serial.print("Stopping discover...");
-        serialBLE.discoverAsyncStop();
+        pBLEScan->stop();
         Serial.println("stopped");
-        delay(5000);
+        delay(1000);
+        Serial.printf("BLE devices found: %d\n", rawBleDeviceList.getCount());
 
-        if (bleDeviceList != nullptr && bleDeviceList->getCount() > 0) {
-            return bleDeviceList;
+        if (rawBleDeviceList.getCount() > 0) {
+            return &rawBleDeviceList;
         }
     }
 
@@ -505,18 +589,31 @@ void OBDClass::end() {
 #endif
 }
 
-void OBDClass::connect(bool reconnect) {
+bool OBDClass::connect(bool reconnect) {
     stopConnect = false;
+    connectedBTAddress.clear();
+    elm327.connected = false;
 
 connect:
     if (stopConnect || reconnect && !initDone) {
-        return;
+        return false;
     }
 
 #ifdef USE_BLE
-    if (!serialBLE.begin("OBD2MQTT")) {
+    const bool useIosVlinkProfile = devName.equalsIgnoreCase("IOS-Vlink") ||
+                                    devName.equalsIgnoreCase("iOS-Vlink");
+    const bool bleStarted = useIosVlinkProfile
+                            ? serialBLE.begin("OBD2MQTT",
+                                              "E7810A71-73AE-499D-8C15-FAA9AEF0C3F2",
+                                              "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F",
+                                              "BEF8D6C9-9C21-4C9E-B632-BD58C1009F9F")
+                            : serialBLE.begin("OBD2MQTT");
+    if (!bleStarted) {
         Serial.println("========== serialBLE failed!");
         ESP.restart();
+    }
+    if (useIosVlinkProfile) {
+        Serial.println("Using IOS-Vlink BLE ELM327 profile");
     }
 #else
     if (!serialBt.begin("OBD2MQTT", true)) {
@@ -555,6 +652,27 @@ connect:
                 Serial.printf("connecting to %s\n", addr.toString().c_str());
                 if (serialBLE.connect(addr)) {
                     connectedBTAddress = addr.toString();
+                }
+            }
+
+            if (!stopConnect && connectedBTAddress.empty()) {
+                Serial.println("No exact BLE name match; trying discovered BLE devices for OBD UART service...");
+                for (int i = 0; !stopConnect && connectedBTAddress.empty() && i < bleDeviceList->getCount(); i++) {
+                    NimBLEAdvertisedDevice *device = bleDeviceList->getDevice(i);
+                    if (device == nullptr) {
+                        continue;
+                    }
+                    addr = NimBLEAddress(device->getAddress());
+                    Serial.printf("trying %s (%s, RSSI %d)\n",
+                                  addr.toString().c_str(),
+                                  device->getName().empty() ? "<no name>" : device->getName().c_str(),
+                                  device->getRSSI());
+                    if (serialBLE.connect(addr)) {
+                        connectedBTAddress = addr.toString();
+                    }
+                    if (connectedBTAddress.empty()) {
+                        serialBLE.disconnect();
+                    }
                 }
             }
         }
@@ -607,9 +725,18 @@ connect:
         NimBLEAddress addr = NimBLEAddress(mac, 0);
 
         if (!stopConnect && addr) {
-            Serial.printf("connecting to %s\n", addr.toString().c_str());
-            if (serialBLE.connect(addr)) {
-                connectedBTAddress = addr.toString();
+            if (useIosVlinkProfile) {
+                Serial.println("Trying NimBLE VLink stream: IOS-Vlink E781/BEF8");
+                if (serialBLE.connect(addr)) {
+                    connectedBTAddress = addr.toString();
+                }
+            } else {
+                Serial.printf("connecting to %s\n", addr.toString().c_str());
+                if (serialBLE.connect(addr)) {
+                    connectedBTAddress = addr.toString();
+                } else {
+                    serialBLE.disconnect();
+                }
             }
         }
 #else
@@ -636,9 +763,9 @@ connect:
     }
 
 #ifdef USE_BLE
-    if (!stopConnect && !serialBLE.isClosed() && serialBLE.connected()) {
+    if (!stopConnect && !connectedBTAddress.empty() && !serialBLE.isClosed() && serialBLE.connected()) {
         int retryCount = 0;
-        while (!elm327.begin(serialBLE, debug, 2000, protocol) && retryCount < 3) {
+        while (!elm327.begin(serialBLE, debug, 5000, protocol) && retryCount < 3) {
             Serial.println("Couldn't connect to OBD scanner - Phase 2");
             delay(BT_DISCOVER_TIME);
             retryCount++;
@@ -646,7 +773,7 @@ connect:
 #else
     if (!stopConnect && !serialBt.isClosed() && serialBt.connected()) {
         int retryCount = 0;
-        while (!elm327.begin(serialBt, debug, 2000, protocol) && retryCount < 3) {
+        while (!elm327.begin(serialBt, debug, 5000, protocol) && retryCount < 3) {
             Serial.println("Couldn't connect to OBD scanner - Phase 2");
             delay(BT_DISCOVER_TIME);
             retryCount++;
@@ -662,8 +789,7 @@ connect:
     }
 
     if (!elm327.connected) {
-        delay(BT_DISCOVER_TIME);
-        Serial.println("Restarting OBD connect.");
+        Serial.println("OBD connect attempt failed.");
 #ifdef USE_BLE
         serialBLE.end();
 #else
@@ -672,10 +798,20 @@ connect:
         if (connectErrorCallback) {
             connectErrorCallback();
         }
-        goto connect;
+        return false;
     }
 
     Serial.println("Connected to ELM327");
+    elm327.specifyNumResponses = this->specifyNumResponses;
+
+#ifdef USE_BLE
+    if (useIosVlinkProfile && protocol != AUTOMATIC) {
+        char command[8] = {'\0'};
+        snprintf(command, sizeof(command), "AT SP %c", protocol);
+        Serial.printf("Locking IOS-Vlink ELM protocol: %s\n", command);
+        elm327.sendCommand_Blocking(command);
+    }
+#endif
 
     if (connectedCallback) {
         connectedCallback();
@@ -690,9 +826,10 @@ connect:
             Serial.printf("ELM327 protocol: %s\n", protocol.c_str());
         }
         setCheckPidSupport(this->checkPidSupport);
-        elm327.specifyNumResponses = this->specifyNumResponses;
         initDone = true;
     }
+
+    return true;
 }
 
 void OBDClass::loop() {
@@ -701,6 +838,45 @@ void OBDClass::loop() {
 #else
     if (!stopConnect && serialBt && !serialBt.isClosed()) {
 #endif
+        if (enginePidCooldownUntil > millis()) {
+            if (lastCooldownVoltageRead == 0 || millis() - lastCooldownVoltageRead >= COOLDOWN_VOLTAGE_INTERVAL_MS) {
+                const bool voltageRead = elm327.sendCommand_Blocking(READ_VOLTAGE) == ELM_SUCCESS;
+                lastCooldownVoltageRead = millis();
+                if (voltageRead) {
+                    const float voltage = strtof(elm327.payload, nullptr);
+                    setStateValue("batteryVoltage", voltage);
+                    DBG_PRINTF("Engine PID cooldown active; battery voltage %.2fV\n", voltage);
+                } else {
+                    DBG_PRINTLN("Engine PID cooldown active; battery voltage unavailable");
+                }
+            }
+            if (lastCooldownPidProbe == 0 || millis() - lastCooldownPidProbe >= COOLDOWN_PID_PROBE_INTERVAL_MS) {
+                lastCooldownPidProbe = millis();
+                probeNextCooldownPid();
+            }
+            delay(500);
+            return;
+        }
+
+        if (enginePidCooldownUntil != 0) {
+            DBG_PRINTLN("Engine PID cooldown ended; probing RPM before resuming full OBD PID reads.");
+            if (!probeRpmForCooldownExit()) {
+                enginePidCooldownUntil = millis() + ENGINE_PID_COOLDOWN_MS;
+                lastCooldownVoltageRead = 0;
+                lastCooldownPidProbe = 0;
+                cooldownPidProbeIndex = 0;
+                DBG_PRINTF("RPM still unavailable; keeping cooldown for another %lus\n",
+                           ENGINE_PID_COOLDOWN_MS / 1000UL);
+                delay(500);
+                return;
+            }
+            DBG_PRINTLN("RPM recovered; resuming full OBD PID reads.");
+            enginePidCooldownUntil = 0;
+            lastCooldownVoltageRead = 0;
+            lastCooldownPidProbe = 0;
+            cooldownPidProbeIndex = 0;
+        }
+
 #ifdef DEBUG_OBDSTATE
         OBDState *state = nextState();
         if (state != nullptr && state->getType() == obd::READ && state->getLastUpdate() != -1 && state->isSupported()) {
@@ -718,11 +894,111 @@ void OBDClass::loop() {
             }
         }
 #else
-        nextState();
+        OBDState *state = nextState();
 #endif
+        if (state != nullptr && state->getType() == obd::READ) {
+            if (state->getUpdateStatus() == ELM_SUCCESS) {
+                const char *payload = state->getPayload() != nullptr ? state->getPayload() : "";
+                if (state->valueType() == OBD_STATE_TYPE_INT) {
+                    auto *is = reinterpret_cast<OBDStateInt *>(state);
+                    DBG_PRINTF("OBD PID updated: %s=%d payload=%s\n", state->getName(), is->getValue(), payload);
+                } else if (state->valueType() == OBD_STATE_TYPE_FLOAT) {
+                    auto *fs = reinterpret_cast<OBDStateFloat *>(state);
+                    DBG_PRINTF("OBD PID updated: %s=%4.2f payload=%s\n", state->getName(), fs->getValue(), payload);
+                } else if (state->valueType() == OBD_STATE_TYPE_BOOL) {
+                    auto *bs = reinterpret_cast<OBDStateBool *>(state);
+                    DBG_PRINTF("OBD PID updated: %s=%d payload=%s\n", state->getName(), bs->getValue(), payload);
+                } else {
+                    DBG_PRINTF("OBD PID updated: %s payload=%s\n", state->getName(), payload);
+                }
+            } else if (state->getUpdateStatus() != ELM_GETTING_MSG) {
+                DBG_PRINTF("OBD PID skipped: %s, status %d\n", state->getName(), state->getUpdateStatus());
+            }
+            delay(NORMAL_PID_PACING_MS);
+        }
+        if (state != nullptr && state->getType() == obd::READ &&
+            state->getService() == SERVICE_01 && state->getPID() == ENGINE_RPM) {
+            if (state->getUpdateStatus() == ELM_SUCCESS) {
+                if (rpmFailureCount != 0) {
+                    DBG_PRINTLN("RPM PID recovered; clearing engine PID cooldown counter.");
+                }
+                rpmFailureCount = 0;
+            } else if (state->getUpdateStatus() == ELM_TIMEOUT || state->getUpdateStatus() == ELM_NO_DATA) {
+                ++rpmFailureCount;
+                DBG_PRINTF("RPM PID failed %u/%u with status %d\n",
+                           rpmFailureCount,
+                           RPM_FAILURES_BEFORE_COOLDOWN,
+                           state->getUpdateStatus());
+                if (rpmFailureCount >= RPM_FAILURES_BEFORE_COOLDOWN) {
+                    rpmFailureCount = 0;
+                    enginePidCooldownUntil = millis() + ENGINE_PID_COOLDOWN_MS;
+                    lastCooldownVoltageRead = 0;
+                    lastCooldownPidProbe = 0;
+                    cooldownPidProbeIndex = 0;
+                    DBG_PRINTF("RPM PID unavailable; pausing engine PID reads for %lus\n",
+                               ENGINE_PID_COOLDOWN_MS / 1000UL);
+                }
+            }
+        }
     } else {
         delay(500);
     }
+}
+
+void OBDClass::probeNextCooldownPid() {
+    std::vector<OBDState *> cooldownProbeStates{};
+    getStates([](OBDState *state) {
+        return state->isEnabled() &&
+               state->isVisible() &&
+               !state->isDiagnostic() &&
+               state->getType() == obd::READ &&
+               state->getService() == SERVICE_01 &&
+               state->getPID() != ENGINE_RPM &&
+               strcmp(state->getName(), "batteryVoltage") != 0;
+    }, cooldownProbeStates);
+
+    if (cooldownProbeStates.empty()) {
+        return;
+    }
+
+    if (cooldownPidProbeIndex >= cooldownProbeStates.size()) {
+        cooldownPidProbeIndex = 0;
+    }
+
+    OBDState *state = cooldownProbeStates.at(cooldownPidProbeIndex++);
+    DBG_PRINTF("Engine PID cooldown active; probing %s (01%02X)\n",
+               state->getName(),
+               state->getPID());
+    state->readValue();
+    if (state->getUpdateStatus() == ELM_SUCCESS) {
+        DBG_PRINTF("Engine PID cooldown probe updated %s\n", state->getName());
+    } else {
+        DBG_PRINTF("Engine PID cooldown probe skipped %s, status %d\n",
+                   state->getName(),
+                   state->getUpdateStatus());
+    }
+}
+
+bool OBDClass::probeRpmForCooldownExit() {
+    std::vector<OBDState *> rpmStates{};
+    getStates([](OBDState *state) {
+        return state->isEnabled() &&
+               state->getType() == obd::READ &&
+               state->getService() == SERVICE_01 &&
+               state->getPID() == ENGINE_RPM;
+    }, rpmStates);
+
+    if (rpmStates.empty()) {
+        return true;
+    }
+
+    OBDState *state = rpmStates.at(0);
+    state->readValue();
+    return state->getUpdateStatus() == ELM_SUCCESS;
+}
+
+bool OBDClass::connected() const {
+    return elm327.connected;
 }
 
 void OBDClass::onConnected(const std::function<void()> &callback) {

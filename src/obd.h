@@ -16,7 +16,8 @@
  */
 #pragma once
 #ifdef USE_BLE
-#include <BLESerial.h>
+#include <BLEScanResultsSet.h>
+#include "vlink_ble_stream.h"
 #else
 #include <BluetoothSerial.h>
 #endif
@@ -37,7 +38,7 @@
 
 #define STATES_FILE          "/states.json"
 
-#define BT_DISCOVER_TIME    10000
+#define BT_DISCOVER_TIME    30000
 
 // https://stackoverflow.com/questions/17170646/what-is-the-best-way-to-get-fuel-consumption-mpg-using-obd2-parameters
 #define AF_RATIO_GAS        17.2
@@ -86,7 +87,7 @@ public:
 
 class OBDClass : public OBDStates {
 #ifdef USE_BLE
-    BLESerial serialBLE;
+    VLinkBLEStream serialBLE;
 #else
     BluetoothSerial serialBt;
 #endif
@@ -101,6 +102,11 @@ class OBDClass : public OBDStates {
     bool checkPidSupport = false;
     bool debug = false;
     bool specifyNumResponses = true;
+    uint8_t rpmFailureCount = 0;
+    unsigned long enginePidCooldownUntil = 0;
+    unsigned long lastCooldownVoltageRead = 0;
+    unsigned long lastCooldownPidProbe = 0;
+    size_t cooldownPidProbeIndex = 0;
 
     DTCs dtcs;
     bool dtcsRead = false;
@@ -142,6 +148,9 @@ class OBDClass : public OBDStates {
     template<typename T>
     T *setFormatFuncByName(const char *funcName, T *state);
 
+    void probeNextCooldownPid();
+    bool probeRpmForCooldownExit();
+
 public:
     OBDClass();
 
@@ -158,7 +167,9 @@ public:
 
     void end();
 
-    void connect(bool reconnect = false);
+    bool connect(bool reconnect = false);
+
+    bool connected() const;
 
     void loop();
 

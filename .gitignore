@@ -10,3 +10,4 @@
 /package-lock.json
 /tools/mqtt-proxy/package-lock.json
 /tools/mqtt-proxy/node_modules/
+.vscode
