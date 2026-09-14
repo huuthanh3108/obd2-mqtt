@@ -18,6 +18,8 @@
 #include "OBDState.h"
 
 #include <ExprParser.h>
+
+#include "pid_codec.h"
 #include <cctype>
 #include <cstdlib>
 
@@ -36,41 +38,7 @@ static bool parsePidPayload(const char *payload,
                             const uint16_t pid,
                             const uint8_t numExpectedBytes,
                             uint64_t &rawValue) {
-    if (payload == nullptr || numExpectedBytes == 0) {
-        return false;
-    }
-
-    char hex[257] = {'\0'};
-    size_t hexLen = 0;
-    for (const char *p = payload; *p != '\0' && hexLen < sizeof(hex) - 1; ++p) {
-        if (isxdigit(static_cast<unsigned char>(*p))) {
-            hex[hexLen++] = static_cast<char>(toupper(static_cast<unsigned char>(*p)));
-        }
-    }
-
-    char marker[5] = {'\0'};
-    snprintf(marker, sizeof(marker), "%02X%02X", service + 0x40, pid & 0xFF);
-    const size_t neededLen = strlen(marker) + (numExpectedBytes * 2);
-    if (hexLen < neededLen) {
-        return false;
-    }
-
-    for (size_t i = 0; i + neededLen <= hexLen; ++i) {
-        if (strncmp(hex + i, marker, strlen(marker)) != 0) {
-            continue;
-        }
-
-        rawValue = 0;
-        size_t pos = i + strlen(marker);
-        for (uint8_t byteIndex = 0; byteIndex < numExpectedBytes; ++byteIndex) {
-            char byteText[3] = {hex[pos], hex[pos + 1], '\0'};
-            rawValue = (rawValue << 8) | strtoul(byteText, nullptr, 16);
-            pos += 2;
-        }
-        return true;
-    }
-
-    return false;
+    return pidcodec::parseResponse(payload, service, pid, numExpectedBytes, rawValue);
 }
 
 OBDState::~OBDState() {
@@ -269,6 +237,10 @@ uint16_t OBDState::getPID() const {
 
 int8_t OBDState::getUpdateStatus() const {
     return this->updateStatus;
+}
+
+bool OBDState::isStale() const {
+    return this->stale;
 }
 
 void OBDState::setEnabled(bool enable) {
@@ -501,8 +473,8 @@ void TypedOBDState<T>::readValue() {
             if (this->readFunction != nullptr) {
                 value = static_cast<T>(this->readFunction());
             } else {
-                char command[8] = {'\0'};
-                snprintf(command, sizeof(command), "%02X%02X", this->service, this->pid & 0xFF);
+                char command[pidcodec::MIN_BUFFER] = {'\0'};
+                pidcodec::buildRequest(command, sizeof(command), this->service, this->pid);
                 const int8_t commandStatus = elm327->sendCommand_Blocking(command);
                 uint64_t rawValue = 0;
                 if (commandStatus == ELM_SUCCESS &&
@@ -523,6 +495,7 @@ void TypedOBDState<T>::readValue() {
             if (elm327->nb_rx_state == ELM_SUCCESS) {
                 this->setPayload(elm327->payload);
                 this->value = value;
+                this->stale = false;
 
                 if (this->postProcessFunction != nullptr) {
                     this->postProcessFunction(this);
@@ -532,7 +505,10 @@ void TypedOBDState<T>::readValue() {
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;
             } else if (elm327->nb_rx_state == ELM_NO_DATA) {
-                this->value = 0;
+                // Keep the last value and flag the state instead of zeroing:
+                // a 0 here reads as "all doors closed" / "lights off", which
+                // is a false report, not a missing one.
+                this->stale = true;
                 this->lastUpdate = millis();
                 this->processing = false;
                 this->updateStatus = elm327->nb_rx_state;

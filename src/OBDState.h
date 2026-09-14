@@ -73,6 +73,10 @@ protected:
     bool enabled = true;
     bool visible = true;
     bool processing = false;
+    // Set when a read came back empty. The previous value is kept rather than
+    // zeroed, and the state is not published - publishing 0 would turn "no
+    // data" into a confident "door closed" / "light off".
+    bool stale = false;
 
     long updateInterval = 1000;
 
@@ -165,6 +169,8 @@ public:
     uint16_t getPID() const;
 
     int8_t getUpdateStatus() const;
+
+    bool isStale() const;
 
     void setEnabled(bool enable);
 

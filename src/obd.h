@@ -22,6 +22,7 @@
 #include <BluetoothSerial.h>
 #endif
 
+#include <atomic>
 #include <bitset>
 #include <FS.h>
 #include <OBDStates.h>
@@ -151,6 +152,18 @@ class OBDClass : public OBDStates {
     void probeNextCooldownPid();
     bool probeRpmForCooldownExit();
 
+    // Guards the ELM327 transport against concurrent use by the polling
+    // task and the diagnostic console.
+    std::atomic_bool paused{false};
+    std::atomic_bool busy{false};
+
+    void loopInternal();
+
+    // Cache of the last body broadcast frame (see readBroadcastFrame).
+    uint8_t bodyFrame[8] = {0};
+    bool bodyFrameValid = false;
+    unsigned long bodyFrameAt = 0;
+
 public:
     OBDClass();
 
@@ -190,6 +203,77 @@ public:
     std::string getConnectedBTAddress() const;
 
     uint16_t getPayloadLength() const;
+
+    /**
+     * Suspend state polling and wait until the read loop released the
+     * ELM327 transport.
+     *
+     * @param timeoutMs how long to wait for the read loop to finish
+     *
+     * @return <code>true</code> if the transport is free to use
+     */
+    bool pause(unsigned long timeoutMs = 15000);
+
+    /**
+     * Resume state polling.
+     */
+    void resume();
+
+    bool isPaused() const;
+
+    /**
+     * Whether the Bluetooth transport itself is up.
+     *
+     * Different from connected(), which reports ELMduino's own flag - that
+     * one is cleared transiently while a blocking command is in flight, so
+     * it is useless as a "may I talk now" gate.
+     *
+     * @return <code>true</code> if the serial link to the adapter is open
+     */
+    bool isLinkUp() const;
+
+    /**
+     * Direct access to the ELM327 instance, for the diagnostic console.
+     * Only use it while the polling is paused.
+     *
+     * @return the ELM327 instance
+     */
+    ELM327 *getELM327();
+
+    /**
+     * Read one passively broadcast CAN frame.
+     *
+     * Door state on this vehicle is not answerable by any diagnostic
+     * request - it is only broadcast. So instead of asking, narrow the
+     * adapter's receive filter to a single id, listen briefly, then put the
+     * filter back.
+     *
+     * Caller must already hold the OBD pause.
+     *
+     * @param canId the 11 bit id to listen for
+     * @param timeoutMs how long to wait for one frame
+     *
+     * @return <code>true</code> if a frame was captured
+     */
+    bool readBroadcastFrame(uint16_t canId, unsigned long timeoutMs = 1200);
+
+    /**
+     * Refresh the cached body frame if it is older than maxAgeMs.
+     *
+     * @param maxAgeMs how stale the cache may be
+     *
+     * @return <code>true</code> if the cache holds a usable frame
+     */
+    bool refreshBodyFrame(unsigned long maxAgeMs = 900);
+
+    /**
+     * @param index data byte index, 0 based
+     *
+     * @return the cached byte, 0 if the cache is not valid
+     */
+    uint8_t getBodyByte(uint8_t index) const;
+
+    bool isBodyFrameValid() const;
 };
 
 extern OBDClass OBD;

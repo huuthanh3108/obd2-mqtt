@@ -82,6 +82,10 @@
 #include "tpms.h"
 #endif
 
+#ifdef TOYOTA_EXPLORER
+#include "ElmConsole.h"
+#endif
+
 HTTPServer server(80);
 
 #define DEBUG_PORT Serial
@@ -646,6 +650,13 @@ bool sendStaticDiagnosticDiscoveryData() {
 bool sendStates(std::vector<OBDState *> &states, bool allSendsSuccessed) {
     if (!states.empty()) {
         for (auto &state: states) {
+            // A state whose last read came back empty keeps its old value and
+            // is not published. Sending it would report a value we do not
+            // actually have - the "ESP32 offline -> headlight OFF" trap.
+            if (state->isStale()) {
+                continue;
+            }
+
             const size_t len = OBD.getPayloadLength() < 64 ? 64 : OBD.getPayloadLength() + 1;
             char tmp_char[len];
 
@@ -982,7 +993,11 @@ void mqttSendData() {
 
             if (OBD.connected()) {
                 OBD.loop();
-            } else if (millis() >= nextOBDReconnect) {
+            } else if (!OBD.isPaused() && millis() >= nextOBDReconnect) {
+                // Never tear the link down while someone else holds the
+                // transport: ELMduino clears elm327.connected transiently
+                // while a blocking command is in flight, and reconnecting
+                // on that would kill the very command that is running.
                 DEBUG_PORT.println("OBD BLE disconnected; trying reconnect.");
                 if (!OBD.connect()) {
                     scheduleNextOBDReconnect();
@@ -1229,5 +1244,16 @@ void setup() {
 }
 
 void loop() {
+#ifdef TOYOTA_EXPLORER
+    // The Arduino loop task stays alive and serves the diagnostic console.
+    static bool consoleStarted = false;
+    if (!consoleStarted) {
+        ElmConsole.begin();
+        consoleStarted = true;
+    }
+    ElmConsole.loop();
+    delay(20);
+#else
     vTaskDelete(nullptr);
+#endif
 }

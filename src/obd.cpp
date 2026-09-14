@@ -21,6 +21,7 @@
 #include <OBDStates.h>
 #include <ExprParser.h>
 #include <cstdlib>
+#include <cctype>
 #include "helper.h"
 
 static constexpr uint8_t RPM_FAILURES_BEFORE_COOLDOWN = 3;
@@ -315,6 +316,48 @@ bool OBDClass::writeStates(FS &fs) {
 
 template<typename T>
 T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
+    // Each door is its own READ state rather than a CALC over one shared
+    // byte: a CALC cannot be marked stale, so if the frame is missing it
+    // would quietly evaluate to 0 and report every door as closed.
+    static const struct { const char *name; uint8_t mask; } DOOR_BITS[] = {
+        {"doorDriver", 0x20}, {"doorPassenger", 0x10},
+        {"doorRearRight", 0x08}, {"doorRearLeft", 0x04},
+    };
+    if (strcmp(state->valueType(), OBD_STATE_TYPE_BOOL) == 0) {
+        for (const auto &d: DOOR_BITS) {
+            if (strcmp(funcName, d.name) != 0) {
+                continue;
+            }
+            const uint8_t mask = d.mask;
+            state
+                    ->withReadFuncName(d.name)
+                    ->withReadFunc([this, mask]() {
+                        if (refreshBodyFrame()) {
+                            elm327.nb_rx_state = ELM_SUCCESS;
+                            return (getBodyByte(5) & mask) != 0;
+                        }
+                        elm327.nb_rx_state = ELM_NO_DATA;
+                        return false;
+                    });
+            return state;
+        }
+    }
+
+    if (strcmp(funcName, "bodyDoorByte") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_INT) == 0) {
+        state
+                ->withReadFuncName("bodyDoorByte")
+                ->withReadFunc([&]() {
+                    if (refreshBodyFrame()) {
+                        elm327.nb_rx_state = ELM_SUCCESS;
+                        return static_cast<int>(getBodyByte(5));
+                    }
+                    // No frame -> report NO_DATA so the state is not published
+                    // as a confident "all doors closed".
+                    elm327.nb_rx_state = ELM_NO_DATA;
+                    return 0;
+                });
+    }
+
     if (strcmp(funcName, "batteryVoltage") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_FLOAT) == 0) {
         state
                 ->withReadFuncName("batteryVoltage")
@@ -833,6 +876,183 @@ connect:
 }
 
 void OBDClass::loop() {
+    // Claim the transport first, then re-check the pause flag. Checking
+    // before claiming leaves a window in which pause() can observe
+    // busy == false and hand the transport out while this task is already
+    // on its way into loopInternal().
+    busy.store(true);
+
+    if (paused.load()) {
+        busy.store(false);
+        delay(10);
+        return;
+    }
+
+    loopInternal();
+    busy.store(false);
+}
+
+bool OBDClass::pause(const unsigned long timeoutMs) {
+    paused.store(true);
+
+    const unsigned long start = millis();
+    while (busy.load()) {
+        if (millis() - start > timeoutMs) {
+            // Do not leave the polling task suspended for good just because
+            // we gave up waiting for it.
+            paused.store(false);
+            return false;
+        }
+        delay(5);
+    }
+
+    // The read loop was cut off mid-command, so its unread answer is still
+    // sitting in the stream. Whoever takes the pause next would consume that
+    // stale data as if it were their own reply - which made the first command
+    // after every pause fail. Start the new owner on a clean stream.
+    if (elm327.elm_port != nullptr) {
+        while (elm327.elm_port->available() > 0) {
+            elm327.elm_port->read();
+        }
+    }
+
+    return true;
+}
+
+void OBDClass::resume() {
+    paused.store(false);
+}
+
+bool OBDClass::isPaused() const {
+    return paused.load();
+}
+
+bool OBDClass::isLinkUp() const {
+#ifdef USE_BLE
+    const bool link = !serialBLE.isClosed() && serialBLE.connected();
+#else
+    const bool link = !serialBt.isClosed() && serialBt.connected();
+#endif
+    // The transport alone is not enough: elm_port is only bound inside
+    // ELM327::begin(), so there is a window where BLE is up but ELMduino
+    // still has no stream to talk through.
+    return link && elm327.elm_port != nullptr;
+}
+
+ELM327 *OBDClass::getELM327() {
+    return &elm327;
+}
+
+// Body door state is broadcast on CAN and is not readable by any diagnostic
+// request on this vehicle - see tools/toyota-explorer/README.md. Listening
+// with a one-id receive filter keeps the burst short and the bus untouched.
+#define BODY_DOOR_CAN_ID 0x620
+
+bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long timeoutMs) {
+    if (elm327.elm_port == nullptr || !isLinkUp()) {
+        return false;
+    }
+
+    char filter[12] = {'\0'};
+    snprintf(filter, sizeof(filter), "ATCRA%03X", canId);
+    if (elm327.sendCommand_Blocking(filter) != ELM_SUCCESS) {
+        return false;
+    }
+
+    while (elm327.elm_port->available() > 0) {
+        elm327.elm_port->read();
+    }
+    elm327.elm_port->print("ATMA\r");
+
+    char line[48] = {'\0'};
+    size_t len = 0;
+    bool got = false;
+    const unsigned long deadline = millis() + timeoutMs;
+
+    while (millis() < deadline && !got) {
+        while (elm327.elm_port->available() > 0) {
+            const char c = static_cast<char>(elm327.elm_port->read());
+            if (c == '\r' || c == '\n') {
+                if (len >= 16) {
+                    got = true;
+                }
+                if (got) {
+                    break;
+                }
+                len = 0;
+                line[0] = '\0';
+            } else if (isxdigit(static_cast<unsigned char>(c)) && len < sizeof(line) - 1) {
+                line[len++] = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+                line[len] = '\0';
+            }
+        }
+        if (!got) {
+            delay(2);
+        }
+    }
+
+    // Any character stops ATMA; then drain up to the prompt.
+    elm327.elm_port->print("\r");
+    const unsigned long stopBy = millis() + 400;
+    while (millis() < stopBy) {
+        while (elm327.elm_port->available() > 0) {
+            if (static_cast<char>(elm327.elm_port->read()) == '>') {
+                goto stopped;
+            }
+        }
+        delay(2);
+    }
+stopped:
+    // Putting the filter back matters: leaving it narrowed would silently
+    // starve every normal PID read afterwards.
+    elm327.sendCommand_Blocking("ATCRA");
+
+    if (!got) {
+        return false;
+    }
+
+    // With headers on the line carries the id first; strip it if present.
+    const char *hex = line;
+    char idStr[4] = {'\0'};
+    snprintf(idStr, sizeof(idStr), "%03X", canId);
+    if (len >= 19 && strncmp(line, idStr, 3) == 0) {
+        hex += 3;
+        len -= 3;
+    }
+    if (len < 16) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < 8; ++i) {
+        char b[3] = {hex[i * 2], hex[i * 2 + 1], '\0'};
+        bodyFrame[i] = static_cast<uint8_t>(strtoul(b, nullptr, 16));
+    }
+    bodyFrameValid = true;
+    bodyFrameAt = millis();
+    return true;
+}
+
+bool OBDClass::refreshBodyFrame(const unsigned long maxAgeMs) {
+    if (bodyFrameValid && millis() - bodyFrameAt < maxAgeMs) {
+        return true;
+    }
+    if (!readBroadcastFrame(BODY_DOOR_CAN_ID)) {
+        // Do not keep serving a stale frame as if it were current.
+        bodyFrameValid = false;
+        return false;
+    }
+    return true;
+}
+
+uint8_t OBDClass::getBodyByte(const uint8_t index) const {
+    return bodyFrameValid && index < 8 ? bodyFrame[index] : 0;
+}
+
+bool OBDClass::isBodyFrameValid() const {
+    return bodyFrameValid;
+}
+
+void OBDClass::loopInternal() {
 #ifdef USE_BLE
     if (!stopConnect && serialBLE && !serialBLE.isClosed()) {
 #else
