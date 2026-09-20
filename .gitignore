@@ -11,3 +11,6 @@
 /tools/mqtt-proxy/package-lock.json
 /tools/mqtt-proxy/node_modules/
 .vscode
+# Wi-Fi credentials pushed to the device - never commit
+tools/wifi-config/wifi.json
+tools/wifi-config/settings.backup.json

@@ -243,6 +243,30 @@ bool OBDState::isStale() const {
     return this->stale;
 }
 
+bool OBDState::isStaleCleared() const {
+    return this->staleCleared;
+}
+
+void OBDState::setStaleCleared(const bool cleared) {
+    this->staleCleared = cleared;
+}
+
+const char *OBDState::getStateClass() const {
+    return this->stateClass;
+}
+
+void OBDState::setStateClass(const char *stateClass) {
+    strlcpy(this->stateClass, stateClass != nullptr ? stateClass : "", sizeof(this->stateClass));
+}
+
+bool OBDState::isRetainWhenStale() const {
+    return this->retainWhenStale;
+}
+
+void OBDState::setRetainWhenStale(const bool retain) {
+    this->retainWhenStale = retain;
+}
+
 void OBDState::setEnabled(bool enable) {
     this->enabled = enable;
 }
@@ -319,6 +343,12 @@ void OBDState::toJSON(JsonDocument &doc) {
     doc["deviceClass"] = this->getDeviceClass();
     doc["measurement"] = this->isMeasurement();
     doc["diagnostic"] = this->isDiagnostic();
+    if (strlen(this->stateClass) != 0) {
+        doc["stateClass"] = this->stateClass;
+    }
+    if (this->retainWhenStale) {
+        doc["retainWhenStale"] = true;
+    }
 
     if (this->type == obd::CALC && strlen(this->calcExpression) != 0) {
         doc["expr"] = this->calcExpression;
@@ -496,6 +526,7 @@ void TypedOBDState<T>::readValue() {
                 this->setPayload(elm327->payload);
                 this->value = value;
                 this->stale = false;
+                this->staleCleared = false;
 
                 if (this->postProcessFunction != nullptr) {
                     this->postProcessFunction(this);

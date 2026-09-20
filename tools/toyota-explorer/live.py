@@ -64,6 +64,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seconds", type=int, default=300)
     ap.add_argument("--log", default=None, help="also append the session to this file")
+    ap.add_argument("--mute-limit", type=int, default=3,
+                    help="changes during settle above which an id is muted; "
+                         "0 mutes nothing (use when a signal may hide in a busy frame)")
     args = ap.parse_args()
 
     log = open(args.log, "a") if args.log else None
@@ -79,7 +82,7 @@ def main():
 
     time.sleep(2.0)
     ser.reset_input_buffer()
-    ser.write(f"live {args.seconds}\n".encode())
+    ser.write(f"live {args.seconds} {args.mute_limit}\n".encode())
     ser.flush()
 
     print("=" * 56)

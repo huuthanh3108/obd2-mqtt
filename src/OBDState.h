@@ -77,6 +77,22 @@ protected:
     // zeroed, and the state is not published - publishing 0 would turn "no
     // data" into a confident "door closed" / "light off".
     bool stale = false;
+    // Set once the retained value has been cleared for this stale episode,
+    // so we clear it exactly once instead of every publish cycle.
+    bool staleCleared = false;
+
+    // Home Assistant state_class. Empty means "derive it from measurement",
+    // which is what every state did before this field existed.
+    char stateClass[21] = "\0";
+
+    // Whether the retained value survives a stale episode.
+    //
+    // Default false: a value we cannot currently confirm must not keep being
+    // shown - that is the "ESP32 offline -> door closed" trap. But for a
+    // reading that stays true while the vehicle sleeps, an odometer being the
+    // obvious one, wiping it means Home Assistant shows unknown for most of
+    // the day and long term statistics break.
+    bool retainWhenStale = false;
 
     long updateInterval = 1000;
 
@@ -171,6 +187,21 @@ public:
     int8_t getUpdateStatus() const;
 
     bool isStale() const;
+
+    bool isStaleCleared() const;
+
+    void setStaleCleared(bool cleared);
+
+    /**
+     * @return the explicit Home Assistant state_class, empty if unset
+     */
+    const char *getStateClass() const;
+
+    void setStateClass(const char *stateClass);
+
+    bool isRetainWhenStale() const;
+
+    void setRetainWhenStale(bool retain);
 
     void setEnabled(bool enable);
 

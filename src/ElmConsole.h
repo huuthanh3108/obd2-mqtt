@@ -236,10 +236,14 @@ public:
      *
      * @param seconds total run time
      * @param settleSeconds learning phase before reporting starts
+     * @param chattyLimit changes during settle above which an id is muted;
+     *                    0 mutes nothing, which is what you want when a
+     *                    signal may be hiding inside a busy frame
      *
      * @return number of changes reported
      */
-    unsigned int runLiveDiff(unsigned long seconds, unsigned long settleSeconds = 8);
+    unsigned int runLiveDiff(unsigned long seconds, unsigned long settleSeconds = 8,
+                             uint16_t chattyLimit = 3);
 
     ScanLimits &getLimits();
 

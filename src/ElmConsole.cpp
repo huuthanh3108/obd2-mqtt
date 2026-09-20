@@ -605,7 +605,8 @@ void ElmConsoleClass::stopMonitor() {
 #define LIVE_MAX_IDS        64
 #define LIVE_CHATTY_LIMIT   3
 
-unsigned int ElmConsoleClass::runLiveDiff(const unsigned long seconds, const unsigned long settleSeconds) {
+unsigned int ElmConsoleClass::runLiveDiff(const unsigned long seconds, const unsigned long settleSeconds,
+                                          const uint16_t chattyLimit) {
     if (!ensureReady()) {
         return 0;
     }
@@ -674,14 +675,23 @@ unsigned int ElmConsoleClass::runLiveDiff(const unsigned long seconds, const uns
         if (!settling && !announced) {
             announced = true;
             uint8_t muted = 0;
+            CONSOLE_PORT.printf("[LIVE] learnt %u id(s)", used);
             for (uint8_t i = 0; i < used; ++i) {
-                if (table[i].changes > LIVE_CHATTY_LIMIT) {
+                if (chattyLimit > 0 && table[i].changes > chattyLimit) {
                     table[i].muted = true;
+                    if (muted == 0) {
+                        CONSOLE_PORT.print(", muted:");
+                    }
+                    // Name the muted ids - a signal hiding in one of them is
+                    // otherwise indistinguishable from no signal at all.
+                    CONSOLE_PORT.printf(" %03X(%u)", table[i].id, table[i].changes);
                     ++muted;
                 }
             }
-            CONSOLE_PORT.printf("[LIVE] learnt %u id(s), muted %u chatty. Go ahead.\n",
-                                used, muted);
+            if (muted == 0) {
+                CONSOLE_PORT.print(", muting nothing");
+            }
+            CONSOLE_PORT.println(". Go ahead.");
         }
 
         while (elm->elm_port->available() > 0) {
@@ -858,12 +868,21 @@ void ElmConsoleClass::handleLine(const String &line) {
     if (lower.startsWith("live")) {
         String args = cmd.substring(4);
         args.trim();
-        const unsigned long secs = args.length() > 0 ? strtoul(args.c_str(), nullptr, 10) : 180UL;
+        // live [seconds] [chattyLimit]   chattyLimit 0 = mute nothing
+        unsigned long secs = 180UL;
+        uint16_t limit = 3;
+        if (args.length() > 0) {
+            const int sp = args.indexOf(' ');
+            secs = strtoul((sp < 0 ? args : args.substring(0, sp)).c_str(), nullptr, 10);
+            if (sp >= 0) {
+                limit = static_cast<uint16_t>(strtoul(args.substring(sp + 1).c_str(), nullptr, 10));
+            }
+        }
         if (secs < 15 || secs > 900) {
-            CONSOLE_PORT.println("usage: live [seconds]   15..900, default 180");
+            CONSOLE_PORT.println("usage: live [seconds] [chattyLimit]   15..900, limit 0 = mute nothing");
             return;
         }
-        runLiveDiff(secs);
+        runLiveDiff(secs, 8, limit);
         return;
     }
 

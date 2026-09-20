@@ -1,0 +1,8 @@
+{
+  "_comment": "Copy to wifi.json and fill in. wifi.json is gitignored - never commit passwords.",
+  "_order": "Tried strictly top to bottom. Entry 0 wins even if a later one has a stronger signal.",
+  "networks": [
+    { "ssid": "MacBook Pro's iPhone", "password": "" },
+    { "ssid": "Thanh_5G", "password": "" }
+  ]
+}

@@ -53,11 +53,16 @@
 
 #define DISCOVERED_DEVICES_FILE "/discovered_devices.json"
 
+// Shown as the device name in Home Assistant; the entity names carry their own
+// prefixes ("Altis OBD2 - " from states.json, "Altis TPMS - " from tpms.cpp).
+#define DEVICE_DISPLAY_NAME     "Altis Gateway"
+
 #define HA_T_CPUTEMP            "cpuTemp"
 #define HA_T_FREEMEM            "freeMem"
 #define HA_T_UPTIME             "uptime"
 #define HA_T_RECONNECTS         "reconnects"
 #define HA_T_IP_ADDR            "ipAddress"
+#define HA_T_WIFI_SSID          "wifiSSID"
 #define HA_T_SQ                 "signalQuality"
 #define HA_T_BAT_VOL            "internalBatteryVoltage"
 #define HA_T_BAT_LVL            "internalBatteryLevel"
@@ -152,10 +157,16 @@ constexpr unsigned long MQTT_RECONNECT_MAX_MS = 120000UL;
 constexpr unsigned long APP_WATCHDOG_TIMEOUT_SEC = 90UL;
 constexpr int MQTT_CONNECT_TIMEOUT_MS = 5000;
 
+// Consecutive failed broker connects, while WiFi itself stays associated,
+// before the current network is treated as the problem. WiFi status cannot
+// tell a working hotspot from one that associates but carries no traffic.
+constexpr uint8_t MQTT_HEALTH_MAX_FAILURES = 3;
+
 std::atomic<unsigned long> nextOBDReconnect{0};
 std::atomic<unsigned long> obdReconnectDelay{OBD_RECONNECT_INITIAL_MS};
 std::atomic<unsigned long> nextMQTTReconnect{0};
 std::atomic<unsigned long> mqttReconnectDelay{MQTT_RECONNECT_INITIAL_MS};
+std::atomic<uint8_t> mqttHealthFailures{0};
 
 size_t getESPHeapSize() {
     return heap_caps_get_free_size(MALLOC_CAP_8BIT);
@@ -319,28 +330,56 @@ void startHttpServer() {
         },
         nullptr,
         [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            if (request->contentType() == MIME_TYPE_JSON) {
-                if (!index) {
+            if (request->contentType() != MIME_TYPE_JSON) {
+                request->send(406);
+                return;
+            }
+
+            if (!index) {
+                // The body is ~17KB for a full profile. Take it from PSRAM like
+                // the state objects do - the internal heap is the scarce one
+                // with BLE, WiFi and MQTT all running.
+                request->_tempObject = heap_caps_malloc(total, MALLOC_CAP_SPIRAM);
+                if (request->_tempObject == nullptr) {
                     request->_tempObject = malloc(total);
                 }
 
-                if (request->_tempObject != nullptr) {
-                    memcpy(static_cast<uint8_t *>(request->_tempObject) + index, data, len);
-
-                    if (index + len == total) {
-                        auto json = std::string(static_cast<const char *>(request->_tempObject), total);
-                        if (OBD.parseJSON(json)) {
-                            if (OBD.writeStates(LittleFS)) {
-                                request->send(200);
-                            }
-                        } else {
-                            request->send(500);
-                        }
-                    }
+                if (request->_tempObject == nullptr) {
+                    request->send(507, MIME_TYPE_PLAIN, "no buffer for request body");
+                    return;
                 }
-            } else {
-                request->send(406);
             }
+
+            if (request->_tempObject == nullptr) {
+                // Allocation failed on the first chunk and was already reported.
+                return;
+            }
+
+            memcpy(static_cast<uint8_t *>(request->_tempObject) + index, data, len);
+
+            if (index + len != total) {
+                return;
+            }
+
+            auto json = std::string(static_cast<const char *>(request->_tempObject), total);
+            // Release the body buffer before parsing: writeStates() builds a
+            // JsonDocument of its own and both do not have to be live at once.
+            free(request->_tempObject);
+            request->_tempObject = nullptr;
+
+            if (!OBD.parseJSON(json)) {
+                request->send(500, MIME_TYPE_PLAIN, "states JSON could not be parsed");
+                return;
+            }
+
+            // Every failure path must answer. A silent close leaves the client
+            // hanging and hides which of the two steps actually failed.
+            if (!OBD.writeStates(LittleFS)) {
+                request->send(500, MIME_TYPE_PLAIN, "states parsed but could not be written to flash");
+                return;
+            }
+
+            request->send(200);
         }
     );
 
@@ -524,7 +563,9 @@ bool sendDiscoveryData() {
         for (auto &state: states) {
             allSendsSuccessed |= mqtt.sendTopicConfig(state->getName(), state->getDescription(), state->getIcon(),
                                                       state->getUnit(), state->getDeviceClass(),
-                                                      state->isMeasurement() ? SC_MEASUREMENT : "",
+                                                      strlen(state->getStateClass()) != 0
+                                                          ? state->getStateClass()
+                                                          : (state->isMeasurement() ? SC_MEASUREMENT : ""),
                                                       state->isDiagnostic() ? EC_DIAGNOSTIC : "",
                                                       state->valueType() == OBD_STATE_TYPE_BOOL
                                                           ? TT_B_SENSOR
@@ -586,6 +627,11 @@ bool sendDiagnosticDiscoveryData() {
                                                   EC_DIAGNOSTIC);
     }
 
+#ifdef NO_MODEM
+    allSendsSuccessed |= mqtt.sendTopicConfig(HA_T_WIFI_SSID, "WiFi SSID", "wifi", "", "", "",
+                                              EC_DIAGNOSTIC);
+#endif
+
     if (GSM::isUseGPRS()) {
         allSendsSuccessed |= mqtt.sendTopicConfig(HA_T_SQ, "Signal Quality", "signal", "dBm",
                                                   "signal_strength", "", EC_DIAGNOSTIC);
@@ -632,7 +678,9 @@ bool sendStaticDiagnosticDiscoveryData() {
         for (auto &state: states) {
             allSendsSuccessed |= mqtt.sendTopicConfig(state->getName(), state->getDescription(), state->getIcon(),
                                                       state->getUnit(), state->getDeviceClass(),
-                                                      state->isMeasurement() ? SC_MEASUREMENT : "",
+                                                      strlen(state->getStateClass()) != 0
+                                                          ? state->getStateClass()
+                                                          : (state->isMeasurement() ? SC_MEASUREMENT : ""),
                                                       state->isDiagnostic() ? EC_DIAGNOSTIC : "",
                                                       state->valueType() == OBD_STATE_TYPE_BOOL
                                                           ? TT_B_SENSOR
@@ -653,7 +701,27 @@ bool sendStates(std::vector<OBDState *> &states, bool allSendsSuccessed) {
             // A state whose last read came back empty keeps its old value and
             // is not published. Sending it would report a value we do not
             // actually have - the "ESP32 offline -> headlight OFF" trap.
+            //
+            // Staying silent is not enough though: every value topic is
+            // published retained, so the last good value would sit on the
+            // broker for ever and Home Assistant would keep showing it as if
+            // it were current. Clear the retained topic once, which makes the
+            // entity read "unknown" instead of a number we no longer believe.
             if (state->isStale()) {
+                if (!state->isRetainWhenStale() && !state->isStaleCleared()) {
+                    mqtt.sendTopicUpdate(state->getName(), "");
+                    state->setStaleCleared(true);
+                    DBG_PRINTF("cleared retained value of %s (no data)\n", state->getName());
+                }
+                continue;
+            }
+
+            // A state that has never been read yet still holds its constructor
+            // value of 0. Publishing that is the same lie as publishing a stale
+            // one: after every boot or /api/states write the odometer would
+            // announce 0 km until its first read lands, which for a 60s
+            // interval on a starved read loop is a long time.
+            if (state->getType() == obd::READ && state->getLastUpdate() == 0) {
                 continue;
             }
 
@@ -757,6 +825,14 @@ bool sendDiagnosticData() {
         sprintf(tmp_char, "%s", gsm.getIpAddress().c_str());
         allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_IP_ADDR, std::string(tmp_char));
     }
+
+#ifdef NO_MODEM
+    // Which hotspot of the ordered list actually carried the connection.
+    const std::string ssid = gsm.getNetworkName();
+    if (!ssid.empty()) {
+        allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_WIFI_SSID, ssid);
+    }
+#endif
 
     if (GSM::isUseGPRS() && signalQuality != SQ_NOT_KNOWN) {
         sprintf(tmp_char, "%d", GSM::convertSQToRSSI(signalQuality));
@@ -1129,11 +1205,21 @@ void mqttSendData() {
                     )) {
                         mqttReconnectDelay = MQTT_RECONNECT_INITIAL_MS;
                         nextMQTTReconnect = 0;
+                        mqttHealthFailures = 0;
                     } else {
                         scheduleNextMQTTReconnect();
 #ifdef NO_MODEM
                         if (!gsm.isNetworkConnected()) {
+                            // WiFi itself dropped - the ordered walk handles it.
                             gsm.checkNetwork(true);
+                            mqttHealthFailures = 0;
+                        } else if (++mqttHealthFailures >= MQTT_HEALTH_MAX_FAILURES) {
+                            // Associated but the broker stays unreachable: this
+                            // network is the problem, so move on to the next.
+                            DEBUG_PORT.printf("MQTT unreachable %u times on the current WiFi\n",
+                                              static_cast<unsigned>(mqttHealthFailures.load()));
+                            mqttHealthFailures = 0;
+                            gsm.switchToNextNetwork();
                         }
 #else
                         gsm.checkNetwork(true);
@@ -1173,6 +1259,7 @@ void startOutputTask(const char *id) {
     if (!Settings.MQTT.getHostname().isEmpty()) {
         mqtt.setClient(gsm.getClient(Settings.MQTT.getSecure()));
         mqtt.setIdentifier(id);
+        mqtt.setIdentifierName(DEVICE_DISPLAY_NAME);
 
         xTaskCreatePinnedToCore(outputTask, "OutputTask", 9216, nullptr, 10, &outputTaskHdl, 0);
     }

@@ -121,11 +121,65 @@ void GeneralSettings::setSleepDuration(const int time) {
 void WiFiSettings::readJson(JsonDocument &doc) {
     strlcpy(wifi.ssid, doc["wifi"]["ssid"] | "", sizeof(wifi.ssid));
     strlcpy(wifi.password, doc["wifi"]["password"] | "", sizeof(wifi.password));
+
+    clearNetworks();
+    JsonArray list = doc["wifi"]["networks"].as<JsonArray>();
+    if (!list.isNull()) {
+        for (JsonObject n: list) {
+            addNetwork(n["ssid"] | "", n["password"] | "");
+        }
+    }
 }
 
 void WiFiSettings::writeJson(JsonDocument &doc) {
     doc["wifi"]["ssid"] = wifi.ssid;
     doc["wifi"]["password"] = wifi.password;
+
+    JsonArray list = doc["wifi"]["networks"].to<JsonArray>();
+    for (uint8_t i = 0; i < networkCount; ++i) {
+        JsonObject n = list.add<JsonObject>();
+        n["ssid"] = networks[i].ssid;
+        n["password"] = networks[i].password;
+    }
+}
+
+uint8_t WiFiSettings::getNetworkCount() const {
+    // The legacy single entry is appended as a last resort when it is set and
+    // not already in the list, so upgrading does not lose a working config.
+    if (networkCount == 0 && strlen(wifi.ssid) != 0) {
+        return 1;
+    }
+    return networkCount;
+}
+
+String WiFiSettings::getNetworkSSID(const uint8_t index) const {
+    if (networkCount == 0 && index == 0) {
+        return wifi.ssid;
+    }
+    return index < networkCount ? String(networks[index].ssid) : String();
+}
+
+String WiFiSettings::getNetworkPassword(const uint8_t index) const {
+    if (networkCount == 0 && index == 0) {
+        return wifi.password;
+    }
+    return index < networkCount ? String(networks[index].password) : String();
+}
+
+void WiFiSettings::clearNetworks() {
+    networkCount = 0;
+    memset(networks, 0, sizeof(networks));
+}
+
+bool WiFiSettings::addNetwork(const char *ssid, const char *password) {
+    if (ssid == nullptr || strlen(ssid) == 0 || networkCount >= WIFI_MAX_NETWORKS) {
+        return false;
+    }
+    strlcpy(networks[networkCount].ssid, ssid, sizeof(networks[networkCount].ssid));
+    strlcpy(networks[networkCount].password, password != nullptr ? password : "",
+            sizeof(networks[networkCount].password));
+    ++networkCount;
+    return true;
 }
 
 String WiFiSettings::getAPSSID(const String &alternate) const {

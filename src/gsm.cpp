@@ -318,31 +318,57 @@ void GSM::setNetworkMode(int mode) {
 
 void GSM::connectToNetwork() {
 #ifdef NO_MODEM
-    if (Settings.WiFi.getAPSSID().isEmpty()) {
+    const uint8_t count = Settings.WiFi.getNetworkCount();
+    if (count == 0) {
         Serial.println("No WiFi SSID was configured");
         return;
     }
 
-    Serial.printf("Connecting WiFi STA to %s...", Settings.WiFi.getAPSSID().c_str());
     WiFi.mode(WIFI_AP_STA);
     WiFi.setSleep(true);
     WiFi.setAutoReconnect(true);
     WiFi.persistent(false);
-    WiFi.begin(Settings.WiFi.getAPSSID().c_str(), Settings.WiFi.getAPPassword().c_str());
     lastNetworkAttempt = millis();
 
-    const unsigned long start = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
-        delay(500);
-        Serial.print(".");
+    // Strict priority order: entry 0 is tried first and only a timeout moves
+    // on to the next. Deliberately not WiFiMulti, which picks the strongest
+    // signal - here the phone hotspot must win over the home network even
+    // when the home network is closer.
+    //
+    // The walk starts at networkStartIndex, which is 0 unless a network was
+    // dropped for being unable to reach the broker (see switchToNextNetwork).
+    if (networkStartIndex >= count) {
+        networkStartIndex = 0;
     }
 
-    if (WiFi.status() == WL_CONNECTED) {
-        ipAddress = WiFi.localIP().toString().c_str();
-        Serial.printf("...success\nIP Address: %s\n", ipAddress.c_str());
-    } else {
+    for (uint8_t n = 0; n < count; ++n) {
+        const uint8_t i = (networkStartIndex + n) % count;
+        const String ssid = Settings.WiFi.getNetworkSSID(i);
+        if (ssid.isEmpty()) {
+            continue;
+        }
+
+        Serial.printf("Connecting WiFi STA to %s (%u/%u)...", ssid.c_str(), i + 1, count);
+        WiFi.disconnect(false, true);
+        delay(100);
+        WiFi.begin(ssid.c_str(), Settings.WiFi.getNetworkPassword(i).c_str());
+
+        const unsigned long start = millis();
+        while (WiFi.status() != WL_CONNECTED && millis() - start < WIFI_CONNECT_TIMEOUT_MS) {
+            delay(500);
+            Serial.print(".");
+        }
+
+        if (WiFi.status() == WL_CONNECTED) {
+            activeNetworkIndex = i;
+            ipAddress = WiFi.localIP().toString().c_str();
+            Serial.printf("...success\nIP Address: %s\n", ipAddress.c_str());
+            return;
+        }
         Serial.println("...fail");
     }
+
+    Serial.printf("No configured WiFi reachable (%u tried)\n", count);
 #else
     Serial.println("Start modem...");
 
@@ -485,9 +511,43 @@ void GSM::powerOff() {
 #endif
 }
 
+#ifdef NO_MODEM
+bool GSM::switchToNextNetwork() {
+    const uint8_t count = Settings.WiFi.getNetworkCount();
+    if (count < 2) {
+        return false;
+    }
+
+    networkStartIndex = (activeNetworkIndex + 1) % count;
+    Serial.printf("Leaving WiFi %s, broker not reachable through it; next is %s\n",
+                  Settings.WiFi.getNetworkSSID(activeNetworkIndex).c_str(),
+                  Settings.WiFi.getNetworkSSID(networkStartIndex).c_str());
+
+    WiFi.disconnect(false, true);
+    delay(200);
+    connectToNetwork();
+    lastNetworkAttempt = millis();
+
+    return true;
+}
+
+uint8_t GSM::getActiveNetworkIndex() const {
+    return activeNetworkIndex;
+}
+
+std::string GSM::getNetworkName() const {
+    if (WiFi.status() != WL_CONNECTED) {
+        return "";
+    }
+    return WiFi.SSID().c_str();
+}
+#endif
+
 bool GSM::checkNetwork(bool resetConnection) {
 #ifdef NO_MODEM
-    if (Settings.WiFi.getAPSSID().isEmpty()) {
+    // Gate on the fallback list, not the legacy single SSID: a config that
+    // only fills networks[] would otherwise never reconnect.
+    if (Settings.WiFi.getNetworkCount() == 0) {
         return false;
     }
 
@@ -505,7 +565,8 @@ bool GSM::checkNetwork(bool resetConnection) {
             WiFi.disconnect(false);
             delay(200);
         }
-        WiFi.begin(Settings.WiFi.getAPSSID().c_str(), Settings.WiFi.getAPPassword().c_str());
+        // Reconnect walks the same ordered list from the top.
+        connectToNetwork();
         lastNetworkAttempt = millis();
 
         const unsigned long start = millis();

@@ -94,6 +94,15 @@ class GSM {
     int networkMode;
 #ifdef NO_MODEM
     unsigned long lastNetworkAttempt;
+
+    // Where the ordered walk over networks[] starts. Normally 0, so the file
+    // order in wifi.json is the priority order. It only moves when a network
+    // that associates fine turns out not to reach the broker.
+    uint8_t networkStartIndex = 0;
+
+    // Entry that is currently associated, so switchToNextNetwork() knows what
+    // to step past.
+    uint8_t activeNetworkIndex = 0;
 #endif
 
 #ifdef NO_MODEM
@@ -204,6 +213,33 @@ public:
      * @return <code>true</code> if network is active or <code>false</code> on a failure
      */
     bool checkNetwork(bool resetConnection = false);
+
+#ifdef NO_MODEM
+    /**
+     * Give up on the currently associated WiFi and continue the ordered walk
+     * at the next entry.
+     *
+     * For when several configured hotspots are in range at once: associating
+     * succeeds but the broker is unreachable through that one, which WiFi
+     * status alone cannot tell apart from a healthy link.
+     *
+     * The start index is kept, not reset, so the bad entry is not picked again
+     * on the next reconnect. Wrapping around brings the list back to entry 0.
+     *
+     * @return <code>true</code> if there was another entry to move on to
+     */
+    bool switchToNextNetwork();
+
+    /**
+     * @return index into networks[] of the currently associated entry
+     */
+    uint8_t getActiveNetworkIndex() const;
+
+    /**
+     * @return SSID of the WiFi the device is associated with, empty if none
+     */
+    std::string getNetworkName() const;
+#endif
 
     /**
      * Returns is network is connected.

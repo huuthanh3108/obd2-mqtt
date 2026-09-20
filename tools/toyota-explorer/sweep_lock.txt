@@ -1,52 +1,13 @@
 ----------------------------------------
 Live Bus Diff
 ----------------------------------------
-Learning for 8s, then reporting for 92s.
+Learning for 8s, then reporting for 112s.
 Ids that keep changing on their own get muted.
 Toggle ONE thing at a time. Press ENTER to stop.
 ----------------------------------------
-[ 25608][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 28996][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (2), retry in 10s
-[ 32385][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[LIVE] learnt 38 id(s), muted 2 chatty. Go ahead.
-[ 36115][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 39502][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (3), retry in 10s
-[ 42889][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 46622][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 50009][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (4), retry in 10s
-[ 53396][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 57131][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 60517][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (5), retry in 10s
-iFi disconnected
-[ 67138][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 70525][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (6), retry in 10s
-[ 73913][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 77646][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 81033][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (7), retry in 10s
-[ 84420][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 88155][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 91541][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (8), retry in 10s
-[ 94928][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[ 98662][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[102049][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (9), retry in 10s
-[108670][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[112057][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (10), retry in 10s
-WiFi disconnected
-[118678][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-[122065][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
-WiFi reconnect failed (11), retry in 10s
-[125452][W][WiFiGeneric.cpp:1062] _eventCallback(): Reason: 201 - NO_AP_FOUND
+[LIVE] learnt 39 id(s), muted 6 chatty. Go ahead.
 ----------------------------------------
-Done - 0 change(s) reported, 38 id(s) tracked.
+Done - 0 change(s) reported, 39 id(s) tracked.
 Nothing moved. Either the signal is not on this bus,
 or it sits in an id that was muted as chatty.
 ----------------------------------------

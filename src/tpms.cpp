@@ -44,8 +44,24 @@ void makeFieldName(const TPMSReading &reading, const char *suffix, char *buffer,
     snprintf(buffer, bufferSize, "tpms_%s_%s", reading.wheel, suffix);
 }
 
+const char *wheelDisplayName(const char *wheel) {
+    if (strcmp(wheel, "front_left") == 0) {
+        return "Trước trái";
+    }
+    if (strcmp(wheel, "front_right") == 0) {
+        return "Trước phải";
+    }
+    if (strcmp(wheel, "rear_left") == 0) {
+        return "Sau trái";
+    }
+    if (strcmp(wheel, "rear_right") == 0) {
+        return "Sau phải";
+    }
+    return wheel;
+}
+
 void makeDisplayName(const TPMSReading &reading, const char *suffix, char *buffer, size_t bufferSize) {
-    snprintf(buffer, bufferSize, "TPMS %s %s", reading.wheel, suffix);
+    snprintf(buffer, bufferSize, "Altis TPMS - %s - %s", wheelDisplayName(reading.wheel), suffix);
 }
 
 void formatFloat(float value, char *buffer, size_t bufferSize) {

@@ -159,10 +159,22 @@ class OBDClass : public OBDStates {
 
     void loopInternal();
 
-    // Cache of the last body broadcast frame (see readBroadcastFrame).
-    uint8_t bodyFrame[8] = {0};
-    bool bodyFrameValid = false;
-    unsigned long bodyFrameAt = 0;
+    // Cache of the last broadcast frame per CAN id (see readBroadcastFrame).
+    // Small fixed table: only a handful of ids carry state we publish, and a
+    // per-id cache keeps one read from invalidating another's data.
+    struct CachedFrame {
+        uint16_t id = 0;
+        uint8_t data[8] = {0};
+        bool valid = false;
+        unsigned long at = 0;
+    };
+
+    // doors 0x620, odometer 0x611, lights 0x2C4, low beam 0x2C1 - four ids
+    // already, so leave headroom rather than have one read evict another.
+    static const uint8_t FRAME_CACHE_SIZE = 6;
+    CachedFrame frameCache[FRAME_CACHE_SIZE];
+
+    CachedFrame *frameSlot(uint16_t canId);
 
 public:
     OBDClass();
@@ -252,28 +264,35 @@ public:
      *
      * @param canId the 11 bit id to listen for
      * @param timeoutMs how long to wait for one frame
+     * @param minBytes reject a frame shorter than this. Frames are not all 8
+     *                 bytes - 0x2C4 carries 4 - but accepting a truncated line
+     *                 silently zero fills the missing bytes, which once made
+     *                 the odometer publish 0.
      *
      * @return <code>true</code> if a frame was captured
      */
-    bool readBroadcastFrame(uint16_t canId, unsigned long timeoutMs = 1200);
+    bool readBroadcastFrame(uint16_t canId, unsigned long timeoutMs = 1200,
+                            uint8_t minBytes = 8);
 
     /**
-     * Refresh the cached body frame if it is older than maxAgeMs.
+     * Refresh the cached frame for an id if it is older than maxAgeMs.
      *
+     * @param canId the 11 bit id
      * @param maxAgeMs how stale the cache may be
      *
      * @return <code>true</code> if the cache holds a usable frame
      */
-    bool refreshBodyFrame(unsigned long maxAgeMs = 900);
+    bool refreshFrame(uint16_t canId, unsigned long maxAgeMs = 900, uint8_t minBytes = 8);
 
     /**
+     * @param canId the 11 bit id
      * @param index data byte index, 0 based
      *
      * @return the cached byte, 0 if the cache is not valid
      */
-    uint8_t getBodyByte(uint8_t index) const;
+    uint8_t getFrameByte(uint16_t canId, uint8_t index) const;
 
-    bool isBodyFrameValid() const;
+    bool isFrameValid(uint16_t canId) const;
 };
 
 extern OBDClass OBD;

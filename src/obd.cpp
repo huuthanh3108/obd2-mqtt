@@ -30,6 +30,55 @@ static constexpr unsigned long COOLDOWN_VOLTAGE_INTERVAL_MS = 10000UL;
 static constexpr unsigned long COOLDOWN_PID_PROBE_INTERVAL_MS = 15000UL;
 static constexpr unsigned long NORMAL_PID_PACING_MS = 350UL;
 
+// Body door state is broadcast on CAN and is not readable by any diagnostic
+// request on this vehicle - see tools/toyota-explorer/README.md. Listening
+// with a one-id receive filter keeps the burst short and the bus untouched.
+#define BODY_DOOR_CAN_ID 0x620
+
+// Odometer, confirmed byte-exact against the dashboard on 2026-09-19:
+// 611 = 21 00 70 10 00 01 EC 2D, where 0x01EC2D = 125997 km.
+// Bytes 5..7, big endian, kilometres.
+#define ODOMETER_CAN_ID  0x611
+
+// Exterior lights, confirmed 2026-09-20 with mon_freq.py / freq_diff.py:
+// a control pair established the noise floor, then OFF -> TAIL -> HEAD -> OFF
+// reproduced both bits exactly (duty cycle 0.00 / 1.00 over ~107 frames per
+// capture). Each has a complementary bit alongside it, which is why the
+// encoding is trustworthy rather than a lucky byte.
+//
+//   2C4 byte 3 bit 0 = 1 when any exterior light is on (TAIL or HEAD)
+//   2C1 byte 3 bit 0 = 1 when the low beam is on (HEAD only)
+//
+// An earlier candidate on 0x640 was wrong: that id is broadcast about once
+// every 30s, far too rarely to sample, and its bits do not track the switch.
+// 2C4 arrives at ~1.2Hz and 2C1 at ~0.9Hz, so both can actually be polled.
+// Byte 3 of 0x2C4 is seen as 24, 25, 26 and 27. Only bit 1 tracks the switch,
+// and it is inverted - it is SET while the lights are off:
+//
+//   lights off : 26  (215 frames)          bit1 = 1
+//   tail       : 25  (108 frames)          bit1 = 0
+//   head       : 25, 24                    bit1 = 0
+//
+// Bit 0 takes both values within one switch position (25 and 24 are both head),
+// so it is not a complement and not a flag. Treating the pair as complementary
+// matched the first 538 frames by luck and then rejected every real reading.
+#define LIGHTS_CAN_ID     0x2C4
+#define LIGHTS_ON_BYTE    3
+#define LIGHTS_OFF_MASK   0x02
+
+#define HEADLIGHT_CAN_ID  0x2C1
+#define HEADLIGHT_ON_BYTE 3
+#define HEADLIGHT_ON_MASK 0x01     // byte 3 bit 0: low beam on
+#define HEADLIGHT_OFF_BYTE 4
+#define HEADLIGHT_OFF_MASK 0x80    // byte 4 bit 7: its complement
+
+// Must stay BELOW the poll interval of the light states. At 4000ms against a
+// 3000ms interval the cached frame was never older than the window, so
+// refreshFrame kept serving the first frame it ever read and the sensor froze
+// on it - stable, and wrong for hours.
+static constexpr unsigned long LIGHT_FRAME_MAX_AGE_MS = 1000UL;
+
+
 OBDClass::OBDClass() : OBDStates(&elm327), elm327() {
     protocol = AUTOMATIC;
 
@@ -176,6 +225,10 @@ template<typename T>
 void OBDClass::fromJSON(T *state, JsonDocument &doc) {
     state->setEnabled(doc["enabled"].as<bool>());
     state->setVisible(doc["visible"].as<bool>());
+    if (!doc["stateClass"].isNull()) {
+        state->setStateClass(doc["stateClass"].as<std::string>().c_str());
+    }
+    state->setRetainWhenStale(doc["retainWhenStale"].as<bool>());
 
     if (state->getType() == obd::READ) {
         if (!doc["readFunc"].isNull()) {
@@ -332,9 +385,9 @@ T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
             state
                     ->withReadFuncName(d.name)
                     ->withReadFunc([this, mask]() {
-                        if (refreshBodyFrame()) {
+                        if (refreshFrame(BODY_DOOR_CAN_ID)) {
                             elm327.nb_rx_state = ELM_SUCCESS;
-                            return (getBodyByte(5) & mask) != 0;
+                            return (getFrameByte(BODY_DOOR_CAN_ID, 5) & mask) != 0;
                         }
                         elm327.nb_rx_state = ELM_NO_DATA;
                         return false;
@@ -343,18 +396,77 @@ T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
         }
     }
 
+    if (strcmp(funcName, "odometer") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_INT) == 0) {
+        state
+                ->withReadFuncName("odometer")
+                ->withReadFunc([&]() {
+                    // Cache longer than the doors: the value moves at most
+                    // once per km, and every read costs an ATMA burst that
+                    // holds the transport away from normal polling.
+                    if (refreshFrame(ODOMETER_CAN_ID, 30000)) {
+                        const int km = (static_cast<int>(getFrameByte(ODOMETER_CAN_ID, 5)) << 16)
+                                       | (static_cast<int>(getFrameByte(ODOMETER_CAN_ID, 6)) << 8)
+                                       | static_cast<int>(getFrameByte(ODOMETER_CAN_ID, 7));
+                        // A car that has moved never reads 0 km. Seeing 0 means
+                        // the frame was not really this id's payload, so report
+                        // no data and let retainWhenStale keep the last reading
+                        // instead of resetting the dashboard to zero.
+                        if (km > 0) {
+                            elm327.nb_rx_state = ELM_SUCCESS;
+                            return km;
+                        }
+                    }
+                    elm327.nb_rx_state = ELM_NO_DATA;
+                    return 0;
+                });
+    }
+
     if (strcmp(funcName, "bodyDoorByte") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_INT) == 0) {
         state
                 ->withReadFuncName("bodyDoorByte")
                 ->withReadFunc([&]() {
-                    if (refreshBodyFrame()) {
+                    if (refreshFrame(BODY_DOOR_CAN_ID)) {
                         elm327.nb_rx_state = ELM_SUCCESS;
-                        return static_cast<int>(getBodyByte(5));
+                        return static_cast<int>(getFrameByte(BODY_DOOR_CAN_ID, 5));
                     }
                     // No frame -> report NO_DATA so the state is not published
                     // as a confident "all doors closed".
                     elm327.nb_rx_state = ELM_NO_DATA;
                     return 0;
+                });
+    }
+
+    if (strcmp(funcName, "lightsOn") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_BOOL) == 0) {
+        state
+                ->withReadFuncName("lightsOn")
+                ->withReadFunc([this]() {
+                    if (refreshFrame(LIGHTS_CAN_ID, LIGHT_FRAME_MAX_AGE_MS, 4)) {
+                        const uint8_t b = getFrameByte(LIGHTS_CAN_ID, LIGHTS_ON_BYTE);
+                        elm327.nb_rx_state = ELM_SUCCESS;
+                        return (b & LIGHTS_OFF_MASK) == 0;
+                    }
+                    // No frame -> NO_DATA, never a confident "lights are off".
+                    elm327.nb_rx_state = ELM_NO_DATA;
+                    return false;
+                });
+    }
+
+    if (strcmp(funcName, "headlightsOn") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_BOOL) == 0) {
+        state
+                ->withReadFuncName("headlightsOn")
+                ->withReadFunc([this]() {
+                    if (refreshFrame(HEADLIGHT_CAN_ID, LIGHT_FRAME_MAX_AGE_MS, 5)) {
+                        const bool on = (getFrameByte(HEADLIGHT_CAN_ID, HEADLIGHT_ON_BYTE)
+                                         & HEADLIGHT_ON_MASK) != 0;
+                        const bool off = (getFrameByte(HEADLIGHT_CAN_ID, HEADLIGHT_OFF_BYTE)
+                                          & HEADLIGHT_OFF_MASK) != 0;
+                        if (on != off) {
+                            elm327.nb_rx_state = ELM_SUCCESS;
+                            return on;
+                        }
+                    }
+                    elm327.nb_rx_state = ELM_NO_DATA;
+                    return false;
                 });
     }
 
@@ -943,12 +1055,8 @@ ELM327 *OBDClass::getELM327() {
     return &elm327;
 }
 
-// Body door state is broadcast on CAN and is not readable by any diagnostic
-// request on this vehicle - see tools/toyota-explorer/README.md. Listening
-// with a one-id receive filter keeps the burst short and the bus untouched.
-#define BODY_DOOR_CAN_ID 0x620
-
-bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long timeoutMs) {
+bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long timeoutMs,
+                                  const uint8_t minBytes) {
     if (elm327.elm_port == nullptr || !isLinkUp()) {
         return false;
     }
@@ -956,13 +1064,29 @@ bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long time
     char filter[12] = {'\0'};
     snprintf(filter, sizeof(filter), "ATCRA%03X", canId);
     if (elm327.sendCommand_Blocking(filter) != ELM_SUCCESS) {
+        DBG_PRINTF("[BCAST %03X] filter rejected\n", canId);
         return false;
     }
+
+    // ATMA output format depends on whatever ran before. Pin it, otherwise a
+    // header-less line and a header-full line need different parsing and one
+    // of the two silently fails.
+    elm327.sendCommand_Blocking("ATH1");
+    elm327.sendCommand_Blocking("ATS0");
 
     while (elm327.elm_port->available() > 0) {
         elm327.elm_port->read();
     }
     elm327.elm_port->print("ATMA\r");
+
+    char idStr[4] = {'\0'};
+    snprintf(idStr, sizeof(idStr), "%03X", canId);
+
+    // ATCRA narrowed the filter and ATH1 is on, so every line ATMA produces is
+    // this id followed by at most 8 data bytes. Anything else is a line that
+    // got merged or cut by the BLE stream, and accepting it is how 0x2C1 once
+    // parsed as 10 bytes and 0x2C4 produced bit pairs the bus never sends.
+    const size_t maxLen = 3 + 16;
 
     char line[48] = {'\0'};
     size_t len = 0;
@@ -973,15 +1097,26 @@ bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long time
         while (elm327.elm_port->available() > 0) {
             const char c = static_cast<char>(elm327.elm_port->read());
             if (c == '\r' || c == '\n') {
-                if (len >= 16) {
-                    got = true;
+                if (len > 3 && strncmp(line, idStr, 3) == 0) {
+                    const size_t dataLen = len - 3;
+                    if (dataLen % 2 == 0 && dataLen <= 16
+                        && dataLen >= static_cast<size_t>(minBytes) * 2) {
+                        got = true;
+                        break;
+                    }
                 }
-                if (got) {
-                    break;
+                if (len != 0) {
+                    DBG_PRINTF("[BCAST %03X] drop '%s'\n", canId, line);
                 }
                 len = 0;
                 line[0] = '\0';
-            } else if (isxdigit(static_cast<unsigned char>(c)) && len < sizeof(line) - 1) {
+            } else if (isxdigit(static_cast<unsigned char>(c))) {
+                // Past a whole frame with no terminator means two frames ran
+                // together. Start over from this character rather than keep
+                // appending, so the next complete frame can still be read.
+                if (len >= maxLen) {
+                    len = 0;
+                }
                 line[len++] = static_cast<char>(toupper(static_cast<unsigned char>(c)));
                 line[len] = '\0';
             }
@@ -1004,52 +1139,89 @@ bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long time
     }
 stopped:
     // Putting the filter back matters: leaving it narrowed would silently
-    // starve every normal PID read afterwards.
+    // starve every normal PID read afterwards. Same for the header: normal PID
+    // parsing ran with ATH0 before we changed it.
     elm327.sendCommand_Blocking("ATCRA");
+    elm327.sendCommand_Blocking("ATH0");
 
     if (!got) {
+        DBG_PRINTF("[BCAST %03X] no frame in %lums (last line len=%u '%s')\n",
+                   canId, timeoutMs, static_cast<unsigned>(len), line);
         return false;
     }
 
-    // With headers on the line carries the id first; strip it if present.
-    const char *hex = line;
-    char idStr[4] = {'\0'};
-    snprintf(idStr, sizeof(idStr), "%03X", canId);
-    if (len >= 19 && strncmp(line, idStr, 3) == 0) {
-        hex += 3;
-        len -= 3;
-    }
-    if (len < 16) {
+    // The accept test above already proved the shape, so the id is there.
+    const char *hex = line + 3;
+    len -= 3;
+
+    CachedFrame *slot = frameSlot(canId);
+    if (slot == nullptr) {
         return false;
     }
-
+    // Frames are not all 8 bytes: 0x2C4 carries the light bits in 4. Decode
+    // what actually arrived and zero the rest, instead of reading past the
+    // end of the line and storing whatever follows as data.
+    const uint8_t nbytes = static_cast<uint8_t>(len / 2 > 8 ? 8 : len / 2);
     for (uint8_t i = 0; i < 8; ++i) {
-        char b[3] = {hex[i * 2], hex[i * 2 + 1], '\0'};
-        bodyFrame[i] = static_cast<uint8_t>(strtoul(b, nullptr, 16));
+        if (i < nbytes) {
+            char b[3] = {hex[i * 2], hex[i * 2 + 1], '\0'};
+            slot->data[i] = static_cast<uint8_t>(strtoul(b, nullptr, 16));
+        } else {
+            slot->data[i] = 0;
+        }
     }
-    bodyFrameValid = true;
-    bodyFrameAt = millis();
+    slot->id = canId;
+    slot->valid = true;
+    slot->at = millis();
     return true;
 }
 
-bool OBDClass::refreshBodyFrame(const unsigned long maxAgeMs) {
-    if (bodyFrameValid && millis() - bodyFrameAt < maxAgeMs) {
+OBDClass::CachedFrame *OBDClass::frameSlot(const uint16_t canId) {
+    for (auto &f: frameCache) {
+        if (f.id == canId) {
+            return &f;
+        }
+    }
+    for (auto &f: frameCache) {
+        if (f.id == 0) {
+            return &f;
+        }
+    }
+    return nullptr;
+}
+
+bool OBDClass::refreshFrame(const uint16_t canId, const unsigned long maxAgeMs,
+                            const uint8_t minBytes) {
+    CachedFrame *slot = frameSlot(canId);
+    if (slot != nullptr && slot->valid && millis() - slot->at < maxAgeMs) {
         return true;
     }
-    if (!readBroadcastFrame(BODY_DOOR_CAN_ID)) {
+    if (!readBroadcastFrame(canId, 1200, minBytes)) {
         // Do not keep serving a stale frame as if it were current.
-        bodyFrameValid = false;
+        if (slot != nullptr) {
+            slot->valid = false;
+        }
         return false;
     }
     return true;
 }
 
-uint8_t OBDClass::getBodyByte(const uint8_t index) const {
-    return bodyFrameValid && index < 8 ? bodyFrame[index] : 0;
+uint8_t OBDClass::getFrameByte(const uint16_t canId, const uint8_t index) const {
+    for (const auto &f: frameCache) {
+        if (f.id == canId) {
+            return f.valid && index < 8 ? f.data[index] : 0;
+        }
+    }
+    return 0;
 }
 
-bool OBDClass::isBodyFrameValid() const {
-    return bodyFrameValid;
+bool OBDClass::isFrameValid(const uint16_t canId) const {
+    for (const auto &f: frameCache) {
+        if (f.id == canId) {
+            return f.valid;
+        }
+    }
+    return false;
 }
 
 void OBDClass::loopInternal() {

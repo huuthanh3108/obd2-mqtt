@@ -65,11 +65,27 @@ public:
     void setSleepDuration(int time);
 };
 
+#define WIFI_MAX_NETWORKS 5
+
 class WiFiSettings {
     struct {
         char ssid[65];
         char password[33];
     } wifi{};
+
+    // Ordered fallback list for station mode. Tried strictly top to bottom -
+    // entry 0 first - so the phone hotspot can be preferred over the home
+    // network even when both are in range.
+    //
+    // The legacy single ssid/password above still acts as the last entry, so
+    // an existing settings.json keeps working untouched.
+    struct Network {
+        char ssid[65];
+        char password[33];
+    };
+
+    Network networks[WIFI_MAX_NETWORKS]{};
+    uint8_t networkCount = 0;
 
     void readJson(JsonDocument &doc);
 
@@ -85,6 +101,27 @@ public:
     String getAPPassword() const;
 
     void setAPPassword(const char *password);
+
+    /**
+     * @return how many station networks are configured, legacy entry included
+     */
+    uint8_t getNetworkCount() const;
+
+    /**
+     * @param index position in the fallback order, 0 is tried first
+     *
+     * @return the SSID, empty if the index is out of range
+     */
+    String getNetworkSSID(uint8_t index) const;
+
+    String getNetworkPassword(uint8_t index) const;
+
+    /**
+     * Replace the whole fallback list.
+     */
+    void clearNetworks();
+
+    bool addNetwork(const char *ssid, const char *password);
 };
 
 class MobileSettings {

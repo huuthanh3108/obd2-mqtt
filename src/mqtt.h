@@ -41,6 +41,7 @@
 #define EC_DIAGNOSTIC       "diagnostic"
 
 #define SC_MEASUREMENT      "measurement"
+#define SC_TOTAL_INCREASING "total_increasing"
 
 #define MQTT_CLIENT_ID      "obd2mqtt"
 
