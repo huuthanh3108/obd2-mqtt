@@ -36,7 +36,7 @@ struct TPMSFieldDescription {
 constexpr TPMSFieldDescription TPMS_FIELDS[] = {
     {"pressure_bar", "Pressure", "car-tire-alert", "bar", "pressure", SC_MEASUREMENT, ""},
     {"pressure_kpa", "Pressure kPa", "car-tire-alert", "kPa", "pressure", SC_MEASUREMENT, ""},
-    {"temperature", "Temperature", "thermometer", "C", "temperature", SC_MEASUREMENT, ""},
+    {"temperature", "Temperature", "thermometer", "°C", "temperature", SC_MEASUREMENT, ""},
     {"battery", "Battery", "battery", "%", "battery", SC_MEASUREMENT, EC_DIAGNOSTIC},
     {"battery_voltage", "Battery Voltage", "battery", "V", "voltage", SC_MEASUREMENT, EC_DIAGNOSTIC},
     {"rssi", "RSSI", "signal", "dBm", "signal_strength", "", EC_DIAGNOSTIC},

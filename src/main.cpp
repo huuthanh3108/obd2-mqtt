@@ -819,12 +819,19 @@ bool sendDiagnosticData() {
     sprintf(tmp_char, "%d", mqtt.reconnectAttemps());
     allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_RECONNECTS, std::string(tmp_char));
 
+    // No OBD reading since boot: publish nothing rather than "0 s ago", which
+    // reads as fresh data exactly when there is none.
     const unsigned long obdLastSeen = latestOBDLastUpdate();
-    const unsigned long obdDataAge = obdLastSeen == 0 ? 0 : (millis() - obdLastSeen) / 1000UL;
-    sprintf(tmp_char, "%lu", obdLastSeen == 0 ? 0 : obdLastSeen / 1000UL);
-    allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_LAST_SEEN, std::string(tmp_char));
-    sprintf(tmp_char, "%lu", obdDataAge);
-    allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_DATA_AGE, std::string(tmp_char));
+    if (obdLastSeen == 0) {
+        tmp_char[0] = '\0';
+        allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_LAST_SEEN, std::string(tmp_char));
+        allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_DATA_AGE, std::string(tmp_char));
+    } else {
+        sprintf(tmp_char, "%lu", obdLastSeen / 1000UL);
+        allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_LAST_SEEN, std::string(tmp_char));
+        sprintf(tmp_char, "%lu", (millis() - obdLastSeen) / 1000UL);
+        allSendsSuccessed |= mqtt.sendTopicUpdate(HA_T_OBD_DATA_AGE, std::string(tmp_char));
+    }
 
     if (!gsm.getIpAddress().empty()) {
         sprintf(tmp_char, "%s", gsm.getIpAddress().c_str());

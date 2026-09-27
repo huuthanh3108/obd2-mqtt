@@ -725,13 +725,16 @@ Cảnh báo áp suất lốp:
 
 ### Theo dõi sức khoẻ xe
 
-Tất cả dưới đây là gợi ý, **chưa chạy thử trên Home Assistant**. Hai chỗ phải
-thay trước khi dùng:
+Tất cả dưới đây là gợi ý, **chưa chạy thử trên Home Assistant**. entity_id lấy
+từ diagnostics của HA ngày 2026-09-27 — HA giữ lại entity_id cũ theo `unique_id`
+nên tên không đồng nhất (`41_42_86_9a_24_23_…`, có cái kèm `_2`, có cái
+`altis_gateway_…`). Hai chỗ còn phải điền:
 
-- **entity_id.** Entity mới tạo sinh `entity_id` từ `obj_id` của discovery, dạng
-  `sensor.4142869a2423_enginecoolanttemp`. Entity cũ có thể vẫn giữ tên cũ
-  (ví dụ `sensor.battery_voltage`, xem phần đổi tên entity). Tra đúng tên ở
-  *Settings → Devices & services → Entities*, lọc theo "Altis".
+- `sensor.THAY_entity_nuoc_lam_mat` — entity nhiệt độ nước làm mát. Trước
+  2026-09-27 HA **không tạo** các entity nhiệt độ (firmware khai báo đơn vị `C`
+  thay vì `°C`); đã sửa, entity sẽ xuất hiện sau lần discovery tiếp theo. Tra tên
+  ở *Settings → Entities*, lọc "Coolant".
+- `sensor.THAY_entity_dtc` — entity danh sách mã lỗi, chỉ được tạo khi xe có mã lỗi.
 - **`notify.notify`**: thay bằng dịch vụ của bạn, ví dụ `notify.mobile_app_<điện thoại>`.
 
 #### 1. Cảm biến thống kê từ lịch sử (`configuration.yaml`)
@@ -743,25 +746,25 @@ tính trên lịch sử đó:
 sensor:
   - platform: statistics
     name: "Altis LTFT 7 ngày"
-    entity_id: sensor.4142869a2423_longtermfueltrimbank1
+    entity_id: sensor.41_42_86_9a_24_23_long_term_fuel_trim_bank_1
     state_characteristic: mean
     max_age: { days: 7 }
     sampling_size: 30000
   - platform: statistics
     name: "Altis nước làm mát max 24h"
-    entity_id: sensor.4142869a2423_enginecoolanttemp
+    entity_id: sensor.THAY_entity_nuoc_lam_mat
     state_characteristic: value_max
     max_age: { hours: 24 }
     sampling_size: 20000
   - platform: statistics
     name: "Altis ắc quy min 24h"
-    entity_id: sensor.4142869a2423_batteryvoltage
+    entity_id: sensor.41_42_86_9a_24_23_battery_voltage_2
     state_characteristic: value_min
     max_age: { hours: 24 }
     sampling_size: 5000
   - platform: statistics
     name: "Altis km 24h"
-    entity_id: sensor.4142869a2423_odometer
+    entity_id: sensor.41_42_86_9a_24_23_odometer_2
     state_characteristic: change
     max_age: { hours: 24 }
     sampling_size: 5000
@@ -773,7 +776,7 @@ sensor:
 - alias: "Altis - Đèn check engine sáng"
   trigger:
     - platform: state
-      entity_id: binary_sensor.4142869a2423_milstate
+      entity_id: binary_sensor.41_42_86_9a_24_23_check_engine_light_2
       to: "on"
   action:
     - service: notify.notify
@@ -781,29 +784,29 @@ sensor:
         title: "⚠️ Altis: đèn check engine"
         message: >
           Đèn check engine vừa sáng. Số mã lỗi:
-          {{ states('sensor.4142869a2423_numdtcs') }}.
-          Mã: {{ states('sensor.4142869a2423_dtc') }}
+          {{ states('sensor.41_42_86_9a_24_23_number_of_dtcs_2') }}.
+          Mã: {{ states('sensor.THAY_entity_dtc') }}
 
 - alias: "Altis - Có mã lỗi mới"
   trigger:
     - platform: numeric_state
-      entity_id: sensor.4142869a2423_numdtcs
+      entity_id: sensor.41_42_86_9a_24_23_number_of_dtcs_2
       above: 0
   action:
     - service: notify.notify
       data:
         title: "⚠️ Altis: có mã lỗi"
-        message: "{{ trigger.to_state.state }} mã lỗi: {{ states('sensor.4142869a2423_dtc') }}"
+        message: "{{ trigger.to_state.state }} mã lỗi: {{ states('sensor.THAY_entity_dtc') }}"
 
 - alias: "Altis - Nước làm mát quá nóng"
   trigger:
     - platform: numeric_state
-      entity_id: sensor.4142869a2423_enginecoolanttemp
+      entity_id: sensor.THAY_entity_nuoc_lam_mat
       above: 105
       for: "00:02:00"
   condition:
     - condition: state
-      entity_id: binary_sensor.4142869a2423_enginerunning
+      entity_id: binary_sensor.41_42_86_9a_24_23_engine_running_2
       state: "on"
   action:
     - service: notify.notify
@@ -815,12 +818,12 @@ sensor:
   # Máy nổ mà ắc quy dưới 13.0 V kéo dài: máy phát / tiết chế có vấn đề
   trigger:
     - platform: numeric_state
-      entity_id: sensor.4142869a2423_batteryvoltage
+      entity_id: sensor.41_42_86_9a_24_23_battery_voltage_2
       below: 13.0
       for: "00:05:00"
   condition:
     - condition: state
-      entity_id: binary_sensor.4142869a2423_enginerunning
+      entity_id: binary_sensor.41_42_86_9a_24_23_engine_running_2
       state: "on"
   action:
     - service: notify.notify
@@ -833,15 +836,15 @@ sensor:
   trigger:
     - platform: template
       value_template: >
-        {{ states('sensor.4142869a2423_fuelsystemstatus') | int(0) == 2 and
-           (states('sensor.4142869a2423_longtermfueltrimbank1') | float(0)) | abs > 10 }}
+        {{ states('sensor.altis_gateway_altis_obd2_fuel_system_status') | int(0) == 2 and
+           (states('sensor.41_42_86_9a_24_23_long_term_fuel_trim_bank_1') | float(0)) | abs > 10 }}
       for: "00:10:00"
   action:
     - service: notify.notify
       data:
         title: "⛽ Altis: fuel trim lệch"
         message: >
-          LTFT {{ states('sensor.4142869a2423_longtermfueltrimbank1') }}% hơn 10 phút.
+          LTFT {{ states('sensor.41_42_86_9a_24_23_long_term_fuel_trim_bank_1') }}% hơn 10 phút.
           Dương = hỗn hợp nghèo (hở khí nạp, MAF bẩn, bơm xăng yếu);
           âm = hỗn hợp giàu (kim phun rò, cảm biến oxy).
 
@@ -849,17 +852,17 @@ sensor:
   # Chạy 20 phút mà nước vẫn dưới 75°C: nghi van hằng nhiệt kẹt mở
   trigger:
     - platform: numeric_state
-      entity_id: sensor.4142869a2423_runtimesinceenginestart
+      entity_id: sensor.41_42_86_9a_24_23_runtime_since_engine_start
       above: 1200
   condition:
     - condition: numeric_state
-      entity_id: sensor.4142869a2423_enginecoolanttemp
+      entity_id: sensor.THAY_entity_nuoc_lam_mat
       below: 75
   action:
     - service: notify.notify
       data:
         title: "🌡️ Altis: máy nguội bất thường"
-        message: "Đã chạy 20 phút, nước làm mát chỉ {{ states('sensor.4142869a2423_enginecoolanttemp') }}°C."
+        message: "Đã chạy 20 phút, nước làm mát chỉ {{ states('sensor.THAY_entity_nuoc_lam_mat') }}°C."
 
 - alias: "Altis - Xu hướng LTFT 7 ngày"
   # Dựa trên lịch sử: trung bình 7 ngày trôi quá ±7% là hỏng dần, chưa đủ bật đèn
@@ -889,20 +892,20 @@ sensor:
       data:
         title: "🚗 Altis - sức khoẻ ngày {{ now().strftime('%d/%m') }}"
         message: >
-          {% set mil = states('binary_sensor.4142869a2423_milstate') %}
-          {% set dtc = states('sensor.4142869a2423_numdtcs') | int(0) %}
+          {% set mil = states('binary_sensor.41_42_86_9a_24_23_check_engine_light_2') %}
+          {% set dtc = states('sensor.41_42_86_9a_24_23_number_of_dtcs_2') | int(0) %}
           {% set ltft = states('sensor.altis_ltft_7_ngay') | float(0) %}
           {% set cool = states('sensor.altis_nuoc_lam_mat_max_24h') | float(0) %}
           {% set bat = states('sensor.altis_ac_quy_min_24h') | float(0) %}
-          {% set age = states('sensor.4142869a2423_obddataage') | int(-1) %}
+          {% set age = states('sensor.41_42_86_9a_24_23_obd_data_age') | int(-1) %}
           Check engine: {{ '🔴 SÁNG' if mil == 'on' else '🟢 tắt' }}
-          Mã lỗi: {{ '🟢 0' if dtc == 0 else '🔴 ' ~ dtc ~ ' (' ~ states('sensor.4142869a2423_dtc') ~ ')' }}
+          Mã lỗi: {{ '🟢 0' if dtc == 0 else '🔴 ' ~ dtc ~ ' (' ~ states('sensor.THAY_entity_dtc') ~ ')' }}
           Nước làm mát max 24h: {{ cool }}°C {{ '🔴' if cool > 105 else '🟢' }}
           Ắc quy min 24h: {{ bat }} V {{ '🔴' if bat < 11.8 else ('🟡' if bat < 12.2 else '🟢') }}
           LTFT TB 7 ngày: {{ ltft | round(1) }}% {{ '🔴' if ltft | abs > 10 else ('🟡' if ltft | abs > 5 else '🟢') }}
           Quãng đường 24h: {{ states('sensor.altis_km_24h') }} km
-          Odometer: {{ states('sensor.4142869a2423_odometer') }} km
-          Km từ lần xoá lỗi: {{ states('sensor.4142869a2423_distancesincecodescleared') }} km
+          Odometer: {{ states('sensor.41_42_86_9a_24_23_odometer_2') }} km
+          Km từ lần xoá lỗi: {{ states('sensor.41_42_86_9a_24_23_distance_since_codes_cleared') }} km
           {% if age < 0 or age > 3600 %}⚠️ Dữ liệu OBD cũ hơn 1 giờ - số liệu trên có thể là của hôm trước.{% endif %}
 ```
 
