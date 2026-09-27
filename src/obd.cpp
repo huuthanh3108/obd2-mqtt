@@ -1067,7 +1067,7 @@ bool OBDClass::isPaused() const {
     return paused.load();
 }
 
-bool OBDClass::isLinkUp() const {
+bool OBDClass::isLinkUp() {
 #ifdef USE_BLE
     const bool link = !serialBLE.isClosed() && serialBLE.connected();
 #else

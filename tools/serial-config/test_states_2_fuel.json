@@ -1,0 +1,28 @@
+[
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelLevelMeter",
+  "description": "Altis OBD2 - Fuel Level (meter)",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 33,
+   "pid": 41,
+   "header": 1984,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 2.0"
+  },
+  "value": {
+   "format": "%4.1f"
+  }
+ }
+]

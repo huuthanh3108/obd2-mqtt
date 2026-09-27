@@ -1,0 +1,132 @@
+[
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "meterPid2112",
+  "description": "Altis OBD2 - Meter PID 2112 (raw)",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 33,
+   "pid": 18,
+   "header": 1984,
+   "numResponses": 1,
+   "numExpectedBytes": 3,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "meterPid2113",
+  "description": "Altis OBD2 - Meter PID 2113 (raw)",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 33,
+   "pid": 19,
+   "header": 1984,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "meterPid2121",
+  "description": "Altis OBD2 - Meter PID 2121 (raw)",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 33,
+   "pid": 33,
+   "header": 1984,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "meterPid2122",
+  "description": "Altis OBD2 - Meter PID 2122 (raw)",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 33,
+   "pid": 34,
+   "header": 1984,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "meterPid2123",
+  "description": "Altis OBD2 - Meter PID 2123 (raw)",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 33,
+   "pid": 35,
+   "header": 1984,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ }
+]

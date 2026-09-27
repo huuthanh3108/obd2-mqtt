@@ -1,0 +1,1758 @@
+[
+ {
+  "type": 1,
+  "valueType": "int",
+  "enabled": true,
+  "visible": false,
+  "interval": -1,
+  "name": "startTime",
+  "description": "Altis OBD2 - Start Time",
+  "icon": "",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "expr": "($millis)",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": false,
+  "interval": 30000,
+  "name": "supportedPids_1_20",
+  "description": "Altis OBD2 - Supported PIDs 1-20",
+  "icon": "",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 0,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 4,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d",
+   "func": "toBitStr"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": false,
+  "interval": 30000,
+  "name": "supportedPids_21_40",
+  "description": "Altis OBD2 - Supported PIDs 21-40",
+  "icon": "",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 32,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 4,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d",
+   "func": "toBitStr"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": false,
+  "interval": 30000,
+  "name": "supportedPids_41_60",
+  "description": "Altis OBD2 - Supported PIDs 41-60",
+  "icon": "",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 64,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 4,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d",
+   "func": "toBitStr"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 30000,
+  "name": "batteryVoltage",
+  "description": "Altis OBD2 - Battery Voltage",
+  "icon": "battery",
+  "unit": "V",
+  "deviceClass": "voltage",
+  "measurement": true,
+  "diagnostic": false,
+  "readFunc": "batteryVoltage",
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 3000,
+  "name": "rpm",
+  "description": "Altis OBD2 - Revolutions per minute",
+  "icon": "engine",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 12,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 4.0"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "speed",
+  "description": "Altis OBD2 - Kilometer per Hour",
+  "icon": "speedometer",
+  "unit": "km/h",
+  "deviceClass": "speed",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 13,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "engineCoolantTemp",
+  "description": "Altis OBD2 - Engine Coolant Temperature",
+  "icon": "thermometer",
+  "unit": "C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 5,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "engineLoad",
+  "description": "Altis OBD2 - Engine Load",
+  "icon": "engine",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 4,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "throttle",
+  "description": "Altis OBD2 - Throttle",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 17,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "intakeAirTemp",
+  "description": "Altis OBD2 - Intake Air Temperature",
+  "icon": "thermometer",
+  "unit": "C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 15,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "mafRate",
+  "description": "Altis OBD2 - Mass Air Flow",
+  "icon": "air-filter",
+  "unit": "g/s",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 16,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 100.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": true,
+  "interval": 5000,
+  "name": "manifoldPressure",
+  "description": "Altis OBD2 - Manifold Pressure",
+  "icon": "",
+  "unit": "kPa",
+  "deviceClass": "pressure",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 11,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "timingAdvance",
+  "description": "Altis OBD2 - Timing Advance",
+  "icon": "axis-x-rotate-clockwise",
+  "unit": "deg",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 14,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 2.0",
+   "bias": -64.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "shortTermFuelTrimBank1",
+  "description": "Altis OBD2 - Short Term Fuel Trim Bank 1",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 6,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 128.0",
+   "bias": -100.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "longTermFuelTrimBank1",
+  "description": "Altis OBD2 - Long Term Fuel Trim Bank 1",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 7,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 128.0",
+   "bias": -100.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "shortTermFuelTrimBank2",
+  "description": "Altis OBD2 - Short Term Fuel Trim Bank 2",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 8,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 128.0",
+   "bias": -100.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "longTermFuelTrimBank2",
+  "description": "Altis OBD2 - Long Term Fuel Trim Bank 2",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 9,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 128.0",
+   "bias": -100.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "fuelPressure",
+  "description": "Altis OBD2 - Fuel Pressure",
+  "icon": "gauge",
+  "unit": "kPa",
+  "deviceClass": "pressure",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 10,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "3"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "runtimeSinceEngineStart",
+  "description": "Altis OBD2 - Runtime Since Engine Start",
+  "icon": "timer",
+  "unit": "s",
+  "deviceClass": "duration",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 31,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "distanceWithMilOn",
+  "description": "Altis OBD2 - Distance With MIL On",
+  "icon": "route",
+  "unit": "km",
+  "deviceClass": "distance",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 33,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "commandedEgr",
+  "description": "Altis OBD2 - Commanded EGR",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 44,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "egrError",
+  "description": "Altis OBD2 - EGR Error",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 45,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 128.0",
+   "bias": -100.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "commandedEvapPurge",
+  "description": "Altis OBD2 - Commanded Evaporative Purge",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 46,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "fuelTankLevel",
+  "description": "Altis OBD2 - Fuel Tank Level",
+  "icon": "fuel",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 47,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "warmupsSinceCodesCleared",
+  "description": "Altis OBD2 - Warmups Since Codes Cleared",
+  "icon": "counter",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 48,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "distanceSinceCodesCleared",
+  "description": "Altis OBD2 - Distance Since Codes Cleared",
+  "icon": "route",
+  "unit": "km",
+  "deviceClass": "distance",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 49,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "barometricPressure",
+  "description": "Altis OBD2 - Barometric Pressure",
+  "icon": "gauge",
+  "unit": "kPa",
+  "deviceClass": "pressure",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 51,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "catalystTempBank1Sensor1",
+  "description": "Altis OBD2 - Catalyst Temperature Bank 1 Sensor 1",
+  "icon": "thermometer",
+  "unit": "C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 60,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 10.0",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "controlModuleVoltage",
+  "description": "Altis OBD2 - Control Module Voltage",
+  "icon": "car-battery",
+  "unit": "V",
+  "deviceClass": "voltage",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 66,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 1000.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "absoluteLoad",
+  "description": "Altis OBD2 - Absolute Load",
+  "icon": "engine",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 67,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "commandedEquivalenceRatio",
+  "description": "Altis OBD2 - Commanded Equivalence Ratio",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 68,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "2.0 / 65536.0"
+  },
+  "value": {
+   "format": "%4.3f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "relativeThrottle",
+  "description": "Altis OBD2 - Relative Throttle",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 69,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "ambientAirTemp",
+  "description": "Altis OBD2 - Ambient Air Temperature",
+  "icon": "thermometer",
+  "unit": "C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 70,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "throttlePositionB",
+  "description": "Altis OBD2 - Throttle Position B",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 71,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "throttlePositionC",
+  "description": "Altis OBD2 - Throttle Position C",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 72,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "commandedThrottleActuator",
+  "description": "Altis OBD2 - Commanded Throttle Actuator",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 76,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "timeRunWithMilOn",
+  "description": "Altis OBD2 - Time Run With MIL On",
+  "icon": "timer",
+  "unit": "min",
+  "deviceClass": "duration",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 77,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "timeSinceCodesCleared",
+  "description": "Altis OBD2 - Time Since Codes Cleared",
+  "icon": "timer",
+  "unit": "min",
+  "deviceClass": "duration",
+  "measurement": true,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 78,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": true,
+  "interval": 30000,
+  "name": "fuelType",
+  "description": "Altis OBD2 - Fuel Type",
+  "icon": "fuel",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 81,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "engineOilTemp",
+  "description": "Altis OBD2 - Engine Oil Temperature",
+  "icon": "thermometer",
+  "unit": "C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 92,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "engineFuelRate",
+  "description": "Altis OBD2 - Engine Fuel Rate",
+  "icon": "fuel",
+  "unit": "L/h",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 94,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 20.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "engineRunning",
+  "description": "Altis OBD2 - Engine Running",
+  "icon": "engine",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": false,
+  "expr": "max($batteryVoltage, 13) - 13",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "monitorStatus",
+  "description": "Altis OBD2 - Monitor Status",
+  "icon": "engine",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 1,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 4,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "milState",
+  "description": "Altis OBD2 - Check Engine Light",
+  "icon": "engine-off",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": false,
+  "expr": "$monitorStatus.b3 & 128",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "numDTCs",
+  "description": "Altis OBD2 - Number of DTCs",
+  "icon": "code-array",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": false,
+  "expr": "numDTCs($monitorStatus.b3 & 127)",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "fuelSystemStatus",
+  "description": "Altis OBD2 - Fuel System Status",
+  "icon": "fuel",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 3,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 256.0"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 600000,
+  "name": "o2SensorsPresent",
+  "description": "Altis OBD2 - O2 Sensors Present",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 19,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 600000,
+  "name": "obdStandard",
+  "description": "Altis OBD2 - OBD Standard",
+  "icon": "car-info",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 28,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": false,
+  "interval": 15000,
+  "name": "o2B1S2Raw",
+  "description": "Altis OBD2 - O2 Bank 1 Sensor 2 raw",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 21,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "o2SensorB1S2Voltage",
+  "description": "Altis OBD2 - O2 Sensor Bank 1 Sensor 2 Voltage",
+  "icon": "gauge",
+  "unit": "V",
+  "deviceClass": "voltage",
+  "measurement": true,
+  "diagnostic": false,
+  "expr": "$o2B1S2Raw.b3 / 200",
+  "value": {
+   "format": "%4.3f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": false,
+  "interval": 15000,
+  "name": "o2B1S1WideRaw",
+  "description": "Altis OBD2 - O2 Bank 1 Sensor 1 wide range raw",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 36,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 4,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "o2SensorB1S1Lambda",
+  "description": "Altis OBD2 - O2 Sensor Bank 1 Sensor 1 Lambda",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "expr": "$o2B1S1WideRaw.b3:5 * 2 / 65536",
+  "value": {
+   "format": "%4.3f"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "o2SensorB1S1Voltage",
+  "description": "Altis OBD2 - O2 Sensor Bank 1 Sensor 1 Voltage",
+  "icon": "gauge",
+  "unit": "V",
+  "deviceClass": "voltage",
+  "measurement": true,
+  "diagnostic": false,
+  "expr": "$o2B1S1WideRaw.b5:7 * 8 / 65536",
+  "value": {
+   "format": "%4.3f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": false,
+  "visible": false,
+  "interval": 15000,
+  "name": "o2B1S1CurrentRaw",
+  "description": "Altis OBD2 - O2 Bank 1 Sensor 1 current raw",
+  "icon": "gauge",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "pid": {
+   "service": 1,
+   "pid": 52,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 4,
+   "responseFormat": 0,
+   "scaleFactor": "1"
+  },
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 1,
+  "valueType": "float",
+  "enabled": false,
+  "visible": true,
+  "interval": 15000,
+  "name": "o2SensorB1S1Current",
+  "description": "Altis OBD2 - O2 Sensor Bank 1 Sensor 1 Current",
+  "icon": "gauge",
+  "unit": "mA",
+  "deviceClass": "current",
+  "measurement": true,
+  "diagnostic": false,
+  "expr": "$o2B1S1CurrentRaw.b5:7 / 256 - 128",
+  "value": {
+   "format": "%4.3f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "catalystTempBank1Sensor2",
+  "description": "Altis OBD2 - Catalyst Temperature Bank 1 Sensor 2",
+  "icon": "thermometer",
+  "unit": "C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 62,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "1.0 / 10.0",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "acceleratorPedalD",
+  "description": "Altis OBD2 - Accelerator Pedal Position D",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 73,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 5000,
+  "name": "acceleratorPedalE",
+  "description": "Altis OBD2 - Accelerator Pedal Position E",
+  "icon": "gauge",
+  "unit": "%",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 1,
+   "pid": 74,
+   "header": 0,
+   "numResponses": 1,
+   "numExpectedBytes": 1,
+   "responseFormat": 0,
+   "scaleFactor": "100.0 / 255.0"
+  },
+  "value": {
+   "format": "%4.2f"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": false,
+  "interval": 1000,
+  "name": "bodyDoorByte",
+  "description": "Altis OBD2 - Body door bitfield (CAN 0x620 byte 5)",
+  "icon": "",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": false,
+  "diagnostic": true,
+  "readFunc": "bodyDoorByte",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 10000,
+  "name": "doorDriver",
+  "description": "Altis OBD2 - Driver Door",
+  "icon": "car-door",
+  "unit": "",
+  "deviceClass": "door",
+  "measurement": false,
+  "diagnostic": false,
+  "readFunc": "doorDriver",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 10000,
+  "name": "doorPassenger",
+  "description": "Altis OBD2 - Passenger Door",
+  "icon": "car-door",
+  "unit": "",
+  "deviceClass": "door",
+  "measurement": false,
+  "diagnostic": false,
+  "readFunc": "doorPassenger",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 10000,
+  "name": "doorRearRight",
+  "description": "Altis OBD2 - Rear Right Door",
+  "icon": "car-door",
+  "unit": "",
+  "deviceClass": "door",
+  "measurement": false,
+  "diagnostic": false,
+  "readFunc": "doorRearRight",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 10000,
+  "name": "doorRearLeft",
+  "description": "Altis OBD2 - Rear Left Door",
+  "icon": "car-door",
+  "unit": "",
+  "deviceClass": "door",
+  "measurement": false,
+  "diagnostic": false,
+  "readFunc": "doorRearLeft",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "odometer",
+  "description": "Altis OBD2 - Odometer",
+  "icon": "counter",
+  "unit": "km",
+  "deviceClass": "distance",
+  "measurement": false,
+  "diagnostic": false,
+  "stateClass": "total_increasing",
+  "retainWhenStale": true,
+  "readFunc": "odometer",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate610b3",
+  "description": "Altis OBD2 - Fuel candidate 0x610 byte 3",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_610_3",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate611b2",
+  "description": "Altis OBD2 - Fuel candidate 0x611 byte 2",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_611_2",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate611b3",
+  "description": "Altis OBD2 - Fuel candidate 0x611 byte 3",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_611_3",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate624b2",
+  "description": "Altis OBD2 - Fuel candidate 0x624 byte 2",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_624_2",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate624b3",
+  "description": "Altis OBD2 - Fuel candidate 0x624 byte 3",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_624_3",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate624b4",
+  "description": "Altis OBD2 - Fuel candidate 0x624 byte 4",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_624_4",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "int",
+  "enabled": true,
+  "visible": true,
+  "interval": 60000,
+  "name": "fuelCandidate638b2",
+  "description": "Altis OBD2 - Fuel candidate 0x638 byte 2",
+  "icon": "gas-station",
+  "unit": "",
+  "deviceClass": "",
+  "measurement": true,
+  "diagnostic": true,
+  "retainWhenStale": true,
+  "readFunc": "canByte_638_2",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 3000,
+  "name": "lightsOn",
+  "description": "Altis OBD2 - Lights On",
+  "icon": "car-light-high",
+  "unit": "",
+  "deviceClass": "light",
+  "measurement": false,
+  "diagnostic": false,
+  "readFunc": "lightsOn",
+  "value": {
+   "format": "%d"
+  }
+ },
+ {
+  "type": 0,
+  "valueType": "bool",
+  "enabled": true,
+  "visible": true,
+  "interval": 3000,
+  "name": "headlightsOn",
+  "description": "Altis OBD2 - Headlights On",
+  "icon": "car-light-dimmed",
+  "unit": "",
+  "deviceClass": "light",
+  "measurement": false,
+  "diagnostic": false,
+  "readFunc": "headlightsOn",
+  "value": {
+   "format": "%d"
+  }
+ }
+]

@@ -368,7 +368,7 @@ biến mất: đây là undefined behavior chưa tìm ra gốc, không phải l�
 | Odometer | `0x611` byte 5–7 | ✅ Verify, khớp đồng hồ |
 | Đèn (tail/head) | `0x2C4` byte 3 bit 0 | ⚠️ **Tạm thời**, theo yêu cầu. Bit này đã bị bác bỏ trong "Đã thử và đã bị bác bỏ"; khi máy nổ byte 3 còn ra `0x2C` là giá trị chưa từng thấy lúc điều tra. Theo dõi trên HA rồi quyết định |
 | Đèn cos | `0x2C1` byte 3 bit 0 | ⚠️ **Tạm thời**. Đã hết `DATA ERROR` (sửa `ATCAF0`) nên đọc được, nhưng bit chưa được kiểm chứng lại khi máy nổ |
-| Mức xăng | chưa biết | 🔎 Đang theo dõi 7 byte ứng viên `fuelCandidate…` (xem "Mức xăng") |
+| Mức xăng | `7C0` `21 29` (ECU đồng hồ, không phải broadcast) | 🔎 `fuelLevelMeter` đang publish, chưa rõ đơn vị — xem "Hướng giải quyết". 7 state `fuelCandidate…` đã tắt 2026-09-27 (làm chậm vòng đọc); bật lại từ `tools/serial-config/states.backup-20260927-135755.json` nếu cần |
 | Khoá cửa | chưa biết | ❌ Một lần đo không ra thay đổi nào; chưa kết luận |
 | Cốp, nắp ca-pô, phanh, phanh tay, xi-nhan, hazard, còi, dây an toàn, số lùi, cửa kính, gạt mưa, điều hoà, sấy kính | chưa biết | ⬜ Chưa quét. Cần người ngồi trong xe bật/tắt từng thứ trong lúc chạy `tools/toyota-explorer/live.py` |
 | Tốc độ từng bánh, góc lái, phanh, ga | `0B0`/`0B2`, `2C1`/`260`/`2C4` (nghi) | ⬜ Chỉ đổi khi xe chạy — cần người thứ hai hoặc ghi log rồi phân tích sau |
@@ -378,6 +378,70 @@ Sửa firmware liên quan trong ngày: `readBroadcastFrame()` tắt CAN auto
 formatting (`ATCAF0`) trong lúc nghe và bật lại sau. Frame nào có byte 0 trông
 giống một PCI ISO-TP không hợp lệ (như `0x08`) trước đây bị ELM in `DATA ERROR`
 thay vì dữ liệu. Sau khi sửa, cửa / odometer / các byte `0x6xx` ra đúng như cũ.
+
+### Hướng giải quyết cho phần chưa làm (research 2026-09-27)
+
+Chưa hướng nào dưới đây được đo trên xe. Nguồn từ diễn đàn là của đời xe gần,
+không phải chính xe này, nên phải đo mới được tin.
+
+**Mức xăng — đọc từ ECU đồng hồ thay vì tìm trên broadcast.** Diễn đàn Toyota
+dùng header `7C0`, request `2129` (service 0x21, PID 0x29), công thức `A/2`
+([Toyota Nation](https://www.toyotanation.com/threads/torque-pro-custom-pids.1645034/)).
+Bằng chứng sẵn có trên xe này:
+
+- `7C0` nằm trong danh sách ECU trả lời, và bitmap service 0x21 của nó có PID `29`
+  (xem [tools/toyota-explorer/README.md](tools/toyota-explorer/README.md)).
+- `7C0.2129` trong các snapshot cũ giảm dần: `1C` (28) lúc 09-12 13:59, `1A` (26)
+  lúc 14:07–14:18, `14` (20) lúc 09-13 07:32 (máy tắt).
+
+Chưa rõ `A/2` là % hay lít — nguồn tự mâu thuẫn. Phép thử: đọc lúc kim 1/4; ~27
+thì là lít (bình ~55 L), ~50 thì là %. Triển khai không cần sửa firmware, chỉ một
+READ state:
+
+```json
+{"type": 0, "valueType": "float", "enabled": true, "visible": true, "interval": 60000,
+ "name": "fuelLevelMeter", "description": "Altis OBD2 - Fuel Level (meter)",
+ "icon": "gas-station", "unit": "", "measurement": true, "diagnostic": false,
+ "pid": {"service": 33, "pid": 41, "header": 1984, "numResponses": 1,
+         "numExpectedBytes": 1, "scaleFactor": "1.0 / 2.0"},
+ "value": {"format": "%4.1f"}}
+```
+
+`header: 1984` là `0x7C0`. `OBDState::readValue()` gửi `AT SH 7C0` trước request
+và trả về `AT SH 7DF` sau, nên các PID khác không bị ảnh hưởng. Nếu đúng thì tắt
+7 state `fuelCandidate…`.
+
+**~~Nhiệt độ dầu hộp số (ATF)~~ — không áp dụng: xe số sàn.** PID `7E1` `2182`
+trên diễn đàn là của bản số tự động U341E. Thử ngày 2026-09-27 (bật khoá và nổ máy)
+không có trả lời, đúng vì xe không có ECU hộp số.
+
+**Kết quả đo 2026-09-27 (máy ấm, ralenti ~700 v/p):** `fuelLevelMeter` (`7C0 2129`)
+trả lời ổn định **18.5–19.5** khi kim ngay trên vạch 1/4 — chưa phân biệt được % hay
+lít, chờ lần đổ đầy (lên ~100 là %, ~50–55 là lít). `longTermFuelTrimBank1`
+**+11.72%** (sáng cùng ngày +3.12%, có lúc ra +7.03%), `o2SensorB1S2Voltage` chỉ
+0–0.33 V (sáng 0.72 V), ắc quy 13.2–13.4 V khi nổ máy. MIL tắt, 0 DTC. Theo dõi xu
+hướng qua lịch sử HA, so LTFT/STFT lúc ralenti với lúc chạy để tách hở khí nạp
+(chỉ cao lúc ralenti) với MAF / áp xăng (cao mọi tải).
+
+**Đèn.** Trên Corolla E140 Body ECU nằm ở mạng BEAN, nên trạng thái đèn thật có thể
+không lên CAN. Hướng khả thi nhất: ECU đồng hồ `7C0` phải biết đèn tail để giảm độ
+sáng táp-lô, và có các PID `2112/2113/2122/2123`. Lần diff trước chỉ thử **cửa**
+với các PID này, chưa từng thử **đèn**. Cách làm: `capture.py` ở từng nấc đèn, ít
+nhất 3 chu kỳ tắt → tail → head → tắt, loại các bit đã biết là trôi (`7C0.2113`
+bit 0–1, `7C0.2123` bit 0–1). Không ra thì dùng đường ngoài OBD (opto vào dây công
+tắc, hoặc transceiver BEAN).
+
+**Khoá cửa.** Không tìm được tài liệu công khai nào cho mode 21 của Body ECU đời xe
+này. Còn lại hai đường: quét `live.py` thêm một lần với `--mute-limit 0`, hoặc thử
+các PID của `7A1`/`7B0` bằng `capture.py` lúc khoá / mở khoá.
+
+**`$state.b5:7` ra 0 ở bản release.** Không có gì để tra bên ngoài. Hướng tiếp: đo
+stack high-water mark của `ReadStatesTask` (stack 9216 byte, `resolveVariables()`
+dùng mảng VLA và gọi đệ quy), bật stack canary, và build release với `-O0` để xem
+lỗi có biến mất không.
+
+**Không áp dụng được:** [toyota-can-bus-multitool](https://github.com/cydia2020/toyota-can-bus-multitool)
+chỉ cho xe TNGA đời mới.
 
 ## Trạng Thái Cửa Xe
 
@@ -583,7 +647,7 @@ nằm ở đây. Chưa xác nhận được vì không biết lịch sử đổ 
 Lần tiếp theo: chụp ngay sau khi đổ đầy (`mon_freq.py fuel_full_a` và
 `fuel_full_b`, 90 giây mỗi lần), rồi so với mốc này.
 
-#### Đang publish tạm để theo dõi trên Home Assistant
+#### Đã publish tạm để theo dõi trên Home Assistant (tắt 2026-09-27)
 
 7 state `fuelCandidate<id>b<n>` (readFunc `canByte_<id>_<n>`, diagnostic, 60s,
 `retainWhenStale`). Giá trị lúc kim 1/4:

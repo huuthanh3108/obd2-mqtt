@@ -243,7 +243,7 @@ public:
      *
      * @return <code>true</code> if the serial link to the adapter is open
      */
-    bool isLinkUp() const;
+    bool isLinkUp();
 
     /**
      * Direct access to the ELM327 instance, for the diagnostic console.

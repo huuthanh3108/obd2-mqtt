@@ -1,3 +1,5 @@
+#ifdef USE_BLE
+
 #include "vlink_ble_stream.h"
 
 static constexpr size_t VLINK_WRITE_CHUNK_SIZE = 1;
@@ -298,3 +300,5 @@ void VLinkBLEStream::handleNotify(NimBLERemoteCharacteristic *characteristic,
     Serial.println();
 #endif
 }
+
+#endif // USE_BLE

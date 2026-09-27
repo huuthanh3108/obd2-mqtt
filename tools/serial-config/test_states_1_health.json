@@ -1,0 +1,29 @@
+[
+ {
+  "type": 0,
+  "valueType": "float",
+  "enabled": true,
+  "visible": true,
+  "interval": 15000,
+  "name": "atfTemperature",
+  "description": "Altis OBD2 - Transmission Fluid Temperature",
+  "icon": "thermometer",
+  "unit": "°C",
+  "deviceClass": "temperature",
+  "measurement": true,
+  "diagnostic": false,
+  "pid": {
+   "service": 33,
+   "pid": 130,
+   "header": 2017,
+   "numResponses": 1,
+   "numExpectedBytes": 2,
+   "responseFormat": 0,
+   "scaleFactor": "7.0 / 1800.0",
+   "bias": -40.0
+  },
+  "value": {
+   "format": "%4.1f"
+  }
+ }
+]
