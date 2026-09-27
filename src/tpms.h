@@ -27,6 +27,8 @@ public:
     void loop();
     bool sendDiscovery(MQTT &mqtt, bool allowOffline) const;
     bool sendState(MQTT &mqtt) const;
+    void sendAvailability(MQTT &mqtt);
+    void resetAvailability();
 
     static bool parseDjtpmsPayload(const uint8_t *payload,
                                    size_t length,
@@ -36,6 +38,8 @@ public:
 
 private:
     std::array<TPMSReading, 4> readings{};
+    // Per wheel: -1 nothing published since the MQTT connect, 0 offline, 1 online.
+    std::array<int8_t, 4> publishedStatus{-1, -1, -1, -1};
     unsigned long nextSimulationUpdate = 0;
     unsigned long nextBleScan = 0;
 

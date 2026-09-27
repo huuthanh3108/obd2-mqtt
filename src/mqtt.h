@@ -33,6 +33,12 @@
 #define LWT_CONNECTED       "connected"
 #define LWT_DISCONNECTED    "connection lost"
 
+// Second availability for OBD entities: the adapter can be out of reach while
+// the ESP32 itself is online (car parked away from it).
+#define OBD_STATUS_TOPIC    "obdStatus"
+#define OBD_STATUS_ONLINE   "online"
+#define OBD_STATUS_OFFLINE  "offline"
+
 #define TT_BUTTON           "button"
 #define TT_B_SENSOR         "binary_sensor"
 #define TT_D_TRACKER        "device_tracker"
@@ -213,6 +219,8 @@ public:
      * @param sourceType the source type e.g. gps
      * @param allowOffline <code>true</code> if topic should not remove
      * @param valueTemplate the value template
+     * @param extraAvailabilityField a second availability topic (online/offline),
+     *        both must be available for the entity to be
      * @return <code>true</code> on success
      *
      * @see
@@ -226,7 +234,8 @@ public:
                          const std::string &icon, const std::string &unit, const std::string &deviceClass,
                          const std::string &stateClass, const std::string &entityCategory,
                          const std::string &topicType = TT_SENSOR, const std::string &sourceType = "",
-                         bool allowOffline = false, const std::string &valueTemplate = "");
+                         bool allowOffline = false, const std::string &valueTemplate = "",
+                         const std::string &extraAvailabilityField = "");
 
     /**
      * Send topic update payload.

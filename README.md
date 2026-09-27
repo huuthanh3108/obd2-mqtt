@@ -239,6 +239,31 @@ Nhóm OBD chính:
 - Timing Advance
 - Fuel trim và các PID khác tuỳ profile trong [data/states.json](data/states.json)
 
+### Availability: khi nào entity hiện Unavailable
+
+| Nhóm entity | Available khi |
+|---|---|
+| Hệ thống (`uptime`, `wifiSSID`, …) và `TPMS … Last Seen` | ESP32 online: topic `…_connection` = `connected` |
+| Mọi state OBD (kể cả `odometer`) | ESP32 online **và** `…_obdStatus` = `online` (`avty_mode: all`) |
+| TPMS áp suất / nhiệt độ / pin / RSSI | ESP32 online **và** `…_tpms_<bánh>_status` = `online`: bánh đó được nghe thấy trong 10 phút gần nhất (`TPMS_FRESH_MS`, quét BLE mỗi 60 s) |
+
+- `connection`: `connected` được publish ngay khi vào broker (birth message);
+  `connection lost` là LWT retained, broker tự ghi khi ESP32 rớt (~22 s).
+- `obdStatus`: `online` khi đã kết nối ELM và link BLE còn sống, `offline` khi mất.
+  Lúc chuyển sang `offline` firmware **xoá luôn giá trị retained** của các state OBD,
+  để broker không giữ số cũ (trước đây vào nhà, xa xe, HA vẫn hiện rpm/nhiệt độ
+  lần cuối như số thật).
+- `tpms_<bánh>_status` chuyển `offline` thì 6 giá trị của bánh đó bị xoá retained.
+  `Last Seen` vẫn chạy tiếp (cho biết dữ liệu cũ bao lâu); chỉ bị xoá khi bánh chưa
+  được nghe lần nào kể từ lúc khởi động. Chưa đo cảm biến DJTPMS phát bao lâu một
+  lần khi xe **đứng yên**: nếu nó ngủ lâu hơn 10 phút thì áp suất sẽ Unavailable cả
+  khi đang đỗ nổ máy — khi đó tăng `TPMS_FRESH_MS`.
+- `odometer` vì vậy cũng Unavailable khi không có xe. Muốn luôn thấy số km cuối,
+  tạo helper trên HA (ví dụ `input_number` cập nhật bằng automation khi `odometer`
+  có giá trị) thay vì giữ retained trên broker.
+- Automation "báo cáo hằng ngày" nên đọc các sensor `statistics` (vẫn giữ giá trị
+  khi OBD offline) thay vì state OBD trực tiếp.
+
 Nhóm diagnostic mới:
 
 - `OBD Last Seen`: mốc uptime giây của lần cập nhật OBD gần nhất.

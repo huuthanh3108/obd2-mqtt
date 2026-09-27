@@ -139,6 +139,8 @@ std::atomic<unsigned long> lastMQTTDiagnosticOutput{0};
 std::atomic<unsigned long> lastMQTTStaticDiagnosticOutput{0};
 std::atomic<unsigned long> lastMQTTDTCDiagnosticOutput{0};
 std::atomic<unsigned long> lastMQTTLocationOutput{0};
+// -1 = nothing published since the last MQTT connect, else 0 offline / 1 online.
+std::atomic<int8_t> publishedOBDStatus{-1};
 
 std::atomic<int> signalQuality{0};
 std::atomic<float> gsmLatitude{0};
@@ -573,7 +575,7 @@ bool sendDiscoveryData() {
                                                       state->valueType() == OBD_STATE_TYPE_BOOL
                                                           ? TT_B_SENSOR
                                                           : TT_SENSOR,
-                                                      "", allowOffline);
+                                                      "", allowOffline, "", OBD_STATUS_TOPIC);
         }
     } else {
         allSendsSuccessed = true;
@@ -953,6 +955,33 @@ unsigned long calcTimestamp(const unsigned int interval) {
     return millis() + interval * 1000L;
 }
 
+// OBD entities are only available while the adapter is reachable. Going
+// offline also clears their retained values: otherwise the broker keeps the
+// last reading and Home Assistant shows it as if it were current.
+void updateOBDStatus() {
+    const bool online = obdConnected && OBD.isLinkUp();
+    const int8_t status = online ? 1 : 0;
+    if (publishedOBDStatus == status) {
+        return;
+    }
+    if (!mqtt.sendTopicUpdate(OBD_STATUS_TOPIC, online ? OBD_STATUS_ONLINE : OBD_STATUS_OFFLINE)) {
+        return;
+    }
+    publishedOBDStatus = status;
+
+    if (!online) {
+        std::vector<OBDState *> states{};
+        OBD.getStates([](const OBDState *state) {
+            return state->isVisible() && state->isEnabled();
+        }, states);
+        for (auto &state: states) {
+            mqtt.sendTopicUpdate(state->getName(), "");
+            state->setStaleCleared(true);
+        }
+        DBG_PRINTF("OBD offline: cleared %u retained values\n", static_cast<unsigned>(states.size()));
+    }
+}
+
 void mqttSendData() {
     if (millis() < lastMQTTOutput) {
         return;
@@ -1209,6 +1238,10 @@ void mqttSendData() {
                         mqttReconnectDelay = MQTT_RECONNECT_INITIAL_MS;
                         nextMQTTReconnect = 0;
                         mqttHealthFailures = 0;
+                        publishedOBDStatus = -1;
+#ifdef ENABLE_TPMS
+                        TPMS.resetAvailability();
+#endif
                     } else {
                         scheduleNextMQTTReconnect();
 #ifdef NO_MODEM
@@ -1230,6 +1263,10 @@ void mqttSendData() {
                     }
                 }
             } else {
+                updateOBDStatus();
+#ifdef ENABLE_TPMS
+                TPMS.sendAvailability(mqtt);
+#endif
                 mqttSendData();
             }
         }

@@ -122,6 +122,11 @@ bool MQTT::connect(const char *clientId, const char *broker, const unsigned int 
                 mqtt.subscribe(sub->getTopic().c_str());
             }
 
+            // Birth message: the will above is retained, so "connection lost"
+            // stays on the broker until something overwrites it. Otherwise that
+            // only happens in sendOBDData(), i.e. never while the car is off.
+            sendTopicUpdate(LWT_TOPIC, LWT_CONNECTED);
+
             return true;
         }
 
@@ -212,7 +217,7 @@ bool MQTT::sendTopicConfig(const std::string &field,
                            const std::string &icon, const std::string &unit, const std::string &deviceClass,
                            const std::string &stateClass, const std::string &entityCategory,
                            const std::string &topicType, const std::string &sourceType, bool allowOffline,
-                           const std::string &valueTemplate) {
+                           const std::string &valueTemplate, const std::string &extraAvailabilityField) {
     // Abbreviations - https://github.com/home-assistant/core/blob/dev/homeassistant/components/mqtt/abbreviations.py
     std::string payload;
 
@@ -265,10 +270,21 @@ bool MQTT::sendTopicConfig(const std::string &field,
         config["ent_cat"] = entityCategory;
     }
 
-    if (!allowOffline) {
+    if (!allowOffline && extraAvailabilityField.empty()) {
         config["avty_t"] = "~/" + createFieldTopic(LWT_TOPIC);
         config["pl_avail"] = LWT_CONNECTED;
         config["pl_not_avail"] = LWT_DISCONNECTED;
+    } else if (!allowOffline) {
+        JsonArray avty = config["avty"].to<JsonArray>();
+        JsonObject device = avty.add<JsonObject>();
+        device["t"] = "~/" + createFieldTopic(LWT_TOPIC);
+        device["pl_avail"] = LWT_CONNECTED;
+        device["pl_not_avail"] = LWT_DISCONNECTED;
+        JsonObject extra = avty.add<JsonObject>();
+        extra["t"] = "~/" + createFieldTopic(extraAvailabilityField);
+        extra["pl_avail"] = OBD_STATUS_ONLINE;
+        extra["pl_not_avail"] = OBD_STATUS_OFFLINE;
+        config["avty_mode"] = "all";
     }
 
     if (!valueTemplate.empty()) {

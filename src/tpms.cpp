@@ -18,6 +18,9 @@ constexpr int ATMOSPHERIC_PRESSURE_KPA = 101;
 constexpr unsigned long TPMS_SIMULATION_INTERVAL_MS = 5000UL;
 constexpr unsigned long TPMS_BLE_INITIAL_DELAY_MS = 30000UL;
 constexpr unsigned long TPMS_BLE_SCAN_INTERVAL_MS = 60000UL;
+// A wheel counts as current when its sensor was heard within this window (ten
+// scans). Older values are withdrawn rather than shown as if they were live.
+constexpr unsigned long TPMS_FRESH_MS = 600000UL;
 constexpr uint32_t TPMS_BLE_SCAN_DURATION_MS = 20000;
 
 struct TPMSFieldDescription {
@@ -140,6 +143,12 @@ bool TPMSManager::sendDiscovery(MQTT &mqtt, bool allowOffline) const {
             char displayName[80] = {'\0'};
             makeFieldName(reading, field.suffix, fieldName, sizeof(fieldName));
             makeDisplayName(reading, field.nameSuffix, displayName, sizeof(displayName));
+            // last_seen stays tied to the device only: it is the one reading
+            // that says how old the others are.
+            char statusField[48] = {'\0'};
+            if (strcmp(field.suffix, "last_seen") != 0) {
+                makeFieldName(reading, "status", statusField, sizeof(statusField));
+            }
             success |= mqtt.sendTopicConfig(fieldName,
                                             displayName,
                                             field.icon,
@@ -149,11 +158,53 @@ bool TPMSManager::sendDiscovery(MQTT &mqtt, bool allowOffline) const {
                                             field.entityCategory,
                                             TT_SENSOR,
                                             "",
-                                            allowOffline);
+                                            allowOffline,
+                                            "",
+                                            statusField);
         }
     }
 
     return success;
+}
+
+void TPMSManager::resetAvailability() {
+    publishedStatus.fill(-1);
+}
+
+void TPMSManager::sendAvailability(MQTT &mqtt) {
+    const unsigned long now = millis();
+    for (size_t i = 0; i < readings.size(); ++i) {
+        const TPMSReading &reading = readings[i];
+        if (!reading.valid) {
+            continue;
+        }
+        const bool fresh = reading.lastSeen != 0 && now - reading.lastSeen < TPMS_FRESH_MS;
+        const int8_t status = fresh ? 1 : 0;
+        if (publishedStatus[i] == status) {
+            continue;
+        }
+
+        char fieldName[48] = {'\0'};
+        makeFieldName(reading, "status", fieldName, sizeof(fieldName));
+        if (!mqtt.sendTopicUpdate(fieldName, fresh ? OBD_STATUS_ONLINE : OBD_STATUS_OFFLINE)) {
+            continue;
+        }
+        publishedStatus[i] = status;
+
+        if (!fresh) {
+            // Withdraw the retained values, or the broker keeps serving the
+            // last pressure as if it were current.
+            for (const auto &field: TPMS_FIELDS) {
+                const bool isLastSeen = strcmp(field.suffix, "last_seen") == 0;
+                if (isLastSeen && reading.lastSeen != 0) {
+                    continue;
+                }
+                makeFieldName(reading, field.suffix, fieldName, sizeof(fieldName));
+                mqtt.sendTopicUpdate(fieldName, "");
+            }
+            DBG_PRINTF("TPMS %s offline: cleared retained values\n", reading.wheel);
+        }
+    }
 }
 
 bool TPMSManager::sendState(MQTT &mqtt) const {
@@ -169,6 +220,16 @@ bool TPMSManager::sendState(MQTT &mqtt) const {
 
         char fieldName[48] = {'\0'};
         char payload[32] = {'\0'};
+
+        makeFieldName(reading, "last_seen", fieldName, sizeof(fieldName));
+        snprintf(payload, sizeof(payload), "%lu", (millis() - reading.lastSeen) / 1000UL);
+        success |= mqtt.sendTopicUpdate(fieldName, payload);
+
+        // Stale wheel: its values were withdrawn by sendAvailability(), do not
+        // put them back.
+        if (millis() - reading.lastSeen >= TPMS_FRESH_MS) {
+            continue;
+        }
 
         makeFieldName(reading, "pressure_bar", fieldName, sizeof(fieldName));
         formatFloat(reading.gaugePressureBar, payload, sizeof(payload));
@@ -192,10 +253,6 @@ bool TPMSManager::sendState(MQTT &mqtt) const {
 
         makeFieldName(reading, "rssi", fieldName, sizeof(fieldName));
         snprintf(payload, sizeof(payload), "%d", reading.rssi);
-        success |= mqtt.sendTopicUpdate(fieldName, payload);
-
-        makeFieldName(reading, "last_seen", fieldName, sizeof(fieldName));
-        snprintf(payload, sizeof(payload), "%lu", (millis() - reading.lastSeen) / 1000UL);
         success |= mqtt.sendTopicUpdate(fieldName, payload);
     }
 
