@@ -95,6 +95,9 @@ HTTPServer server(80);
 
 #define DEBUG_PORT Serial
 
+#define SERIAL_CMD_MAX_LEN 32768
+#define SERIAL_RX_BUFFER_SIZE 4096
+
 // #define DUMP_AT_COMMANDS
 
 #ifdef DUMP_AT_COMMANDS
@@ -1282,6 +1285,9 @@ void startReadTask() {
 void setup() {
     startTime = millis();
 
+    // The default 256 byte RX buffer overflows while loop() is starved by the
+    // OBD task, and a states line for the serial commands is ~18KB.
+    DEBUG_PORT.setRxBufferSize(SERIAL_RX_BUFFER_SIZE);
     DEBUG_PORT.begin(115200);
 
     if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
@@ -1341,6 +1347,66 @@ void loop() {
     ElmConsole.loop();
     delay(20);
 #else
-    vTaskDelete(nullptr);
+    // Settings over USB serial - the way back in when no configured network
+    // is reachable, so neither the STA address nor the API can be used.
+    //   settings         prints the current settings as one JSON line
+    //   settings {json}  replaces all settings, like PUT /api/settings
+    //   states           prints the current states as one JSON line
+    //   states {json}    replaces all states, like PUT /api/states
+    //   reboot
+    // A full states profile is ~18KB, so the line buffer lives in PSRAM.
+    static char *line = static_cast<char *>(heap_caps_malloc(SERIAL_CMD_MAX_LEN, MALLOC_CAP_SPIRAM));
+    static size_t lineLen = 0;
+    static bool overflow = false;
+    if (line == nullptr) {
+        delay(1000);
+        return;
+    }
+
+    while (DEBUG_PORT.available()) {
+        const int c = DEBUG_PORT.read();
+        if (c != '\n' && c != '\r') {
+            if (lineLen < SERIAL_CMD_MAX_LEN) {
+                line[lineLen++] = static_cast<char>(c);
+            } else {
+                overflow = true;
+            }
+            continue;
+        }
+
+        const std::string cmd(line, lineLen);
+        if (overflow) {
+            DEBUG_PORT.println("CMD ERR too long");
+        } else if (cmd == "settings") {
+            DEBUG_PORT.printf("SETTINGS %s\n", Settings.buildJson().c_str());
+        } else if (cmd.rfind("settings ", 0) == 0) {
+            if (!Settings.parseJson(cmd.substr(9))) {
+                DEBUG_PORT.println("SETTINGS ERR parse");
+            } else if (!Settings.writeSettings(LittleFS)) {
+                DEBUG_PORT.println("SETTINGS ERR write");
+            } else {
+                DEBUG_PORT.println("SETTINGS OK");
+            }
+        } else if (cmd == "states") {
+            DEBUG_PORT.print("STATES ");
+            DEBUG_PORT.println(OBD.buildJSON().c_str());
+        } else if (cmd.rfind("states ", 0) == 0) {
+            std::string json = cmd.substr(7);
+            if (!OBD.parseJSON(json)) {
+                DEBUG_PORT.printf("STATES ERR parse (%u bytes)\n", static_cast<unsigned>(json.size()));
+            } else if (!OBD.writeStates(LittleFS)) {
+                DEBUG_PORT.println("STATES ERR write");
+            } else {
+                DEBUG_PORT.println("STATES OK");
+            }
+        } else if (cmd == "reboot") {
+            DEBUG_PORT.println("REBOOT");
+            DEBUG_PORT.flush();
+            ESP.restart();
+        }
+        lineLen = 0;
+        overflow = false;
+    }
+    delay(20);
 #endif
 }

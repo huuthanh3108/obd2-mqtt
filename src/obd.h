@@ -169,9 +169,10 @@ class OBDClass : public OBDStates {
         unsigned long at = 0;
     };
 
-    // doors 0x620, odometer 0x611, lights 0x2C4, low beam 0x2C1 - four ids
-    // already, so leave headroom rather than have one read evict another.
-    static const uint8_t FRAME_CACHE_SIZE = 6;
+    // doors 0x620, odometer 0x611, lights 0x2C4, low beam 0x2C1, plus the
+    // canByte_ candidates (0x610 0x624 0x638) - leave headroom rather than have
+    // one read evict another.
+    static const uint8_t FRAME_CACHE_SIZE = 10;
     CachedFrame frameCache[FRAME_CACHE_SIZE];
 
     CachedFrame *frameSlot(uint16_t canId);

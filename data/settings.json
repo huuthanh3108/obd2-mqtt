@@ -4,9 +4,9 @@
     "password": "Dnictpro123"
   },
   "mqtt": {
-    "hostname": "anhkuteo.ddns.net",
+    "hostname": "mqtt.anhkuteo.io.vn",
     "port": 8883,
-    "secure": false,
+    "secure": true,
     "username": "mqtt_user",
     "password": "mqtt_user"
   },

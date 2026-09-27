@@ -64,7 +64,10 @@ static constexpr unsigned long NORMAL_PID_PACING_MS = 350UL;
 // matched the first 538 frames by luck and then rejected every real reading.
 #define LIGHTS_CAN_ID     0x2C4
 #define LIGHTS_ON_BYTE    3
+#define LIGHTS_ON_MASK    0x01
 #define LIGHTS_OFF_MASK   0x02
+
+#define CAN_BYTE_MAX_AGE_MS 60000
 
 #define HEADLIGHT_CAN_ID  0x2C1
 #define HEADLIGHT_ON_BYTE 3
@@ -443,7 +446,10 @@ T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
                     if (refreshFrame(LIGHTS_CAN_ID, LIGHT_FRAME_MAX_AGE_MS, 4)) {
                         const uint8_t b = getFrameByte(LIGHTS_CAN_ID, LIGHTS_ON_BYTE);
                         elm327.nb_rx_state = ELM_SUCCESS;
-                        return (b & LIGHTS_OFF_MASK) == 0;
+                        // Temporary: read the ON bit instead of inverting the OFF
+                        // bit. With the engine running byte 3 reads 0x2C - neither
+                        // bit set - which the old inverted test reported as "on".
+                        return (b & LIGHTS_ON_MASK) != 0;
                     }
                     // No frame -> NO_DATA, never a confident "lights are off".
                     elm327.nb_rx_state = ELM_NO_DATA;
@@ -456,18 +462,40 @@ T *OBDClass::setReadFuncByName(const char *funcName, T *state) {
                 ->withReadFuncName("headlightsOn")
                 ->withReadFunc([this]() {
                     if (refreshFrame(HEADLIGHT_CAN_ID, LIGHT_FRAME_MAX_AGE_MS, 5)) {
-                        const bool on = (getFrameByte(HEADLIGHT_CAN_ID, HEADLIGHT_ON_BYTE)
-                                         & HEADLIGHT_ON_MASK) != 0;
-                        const bool off = (getFrameByte(HEADLIGHT_CAN_ID, HEADLIGHT_OFF_BYTE)
-                                          & HEADLIGHT_OFF_MASK) != 0;
-                        if (on != off) {
-                            elm327.nb_rx_state = ELM_SUCCESS;
-                            return on;
-                        }
+                        // Temporary: the ON bit alone. With the engine running
+                        // byte 4 carries other data and its bit 7 is never set,
+                        // so requiring the complement reported no data at all.
+                        elm327.nb_rx_state = ELM_SUCCESS;
+                        return (getFrameByte(HEADLIGHT_CAN_ID, HEADLIGHT_ON_BYTE)
+                                & HEADLIGHT_ON_MASK) != 0;
                     }
                     elm327.nb_rx_state = ELM_NO_DATA;
                     return false;
                 });
+    }
+
+    // canByte_<hex id>_<byte index>, e.g. canByte_624_3: one raw byte of a
+    // passively broadcast frame, for watching candidates whose meaning is not
+    // known yet. The 0x6xx body frames come every 20-45s, so a single listen
+    // often misses them; retainWhenStale keeps the last byte meanwhile.
+    if (strncmp(funcName, "canByte_", 8) == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_INT) == 0) {
+        char *end = nullptr;
+        const long canId = strtol(funcName + 8, &end, 16);
+        const long index = (end != nullptr && *end == '_') ? strtol(end + 1, nullptr, 10) : -1;
+        if (canId > 0 && canId <= 0x7FF && index >= 0 && index < 8) {
+            const auto id = static_cast<uint16_t>(canId);
+            const auto idx = static_cast<uint8_t>(index);
+            state
+                    ->withReadFuncName(funcName)
+                    ->withReadFunc([this, id, idx]() {
+                        if (refreshFrame(id, CAN_BYTE_MAX_AGE_MS)) {
+                            elm327.nb_rx_state = ELM_SUCCESS;
+                            return static_cast<int>(getFrameByte(id, idx));
+                        }
+                        elm327.nb_rx_state = ELM_NO_DATA;
+                        return 0;
+                    });
+        }
     }
 
     if (strcmp(funcName, "batteryVoltage") == 0 && strcmp(state->valueType(), OBD_STATE_TYPE_FLOAT) == 0) {
@@ -1073,6 +1101,10 @@ bool OBDClass::readBroadcastFrame(const uint16_t canId, const unsigned long time
     // of the two silently fails.
     elm327.sendCommand_Blocking("ATH1");
     elm327.sendCommand_Blocking("ATS0");
+    // Raw frames, no ISO-TP interpretation: with auto formatting on, a frame
+    // whose first byte is 0x08 (0x2C1 with the engine running) is read as an
+    // invalid single-frame length and ATMA prints DATA ERROR instead of it.
+    elm327.sendCommand_Blocking("ATCAF0");
 
     while (elm327.elm_port->available() > 0) {
         elm327.elm_port->read();
@@ -1142,6 +1174,7 @@ stopped:
     // starve every normal PID read afterwards. Same for the header: normal PID
     // parsing ran with ATH0 before we changed it.
     elm327.sendCommand_Blocking("ATCRA");
+    elm327.sendCommand_Blocking("ATCAF1");
     elm327.sendCommand_Blocking("ATH0");
 
     if (!got) {

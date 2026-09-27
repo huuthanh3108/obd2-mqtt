@@ -111,7 +111,10 @@ bool MQTT::connect(const char *clientId, const char *broker, const unsigned int 
     while (!mqtt.connected() && numFailed < MQTT_CON_RETRIES) {
         Serial.printf("Client %s connects to the MQTT broker...", clientId);
         std::string lwtTopic = maintopic + "/" + createFieldTopic(LWT_TOPIC);
-        if (mqtt.connect(clientId, username, password, lwtTopic.c_str(), 0, false, LWT_DISCONNECTED, true)) {
+        // The will must be retained: "connected" is published retained, so a
+        // non-retained will leaves "connected" on the broker after a drop and
+        // Home Assistant keeps showing the last values as available.
+        if (mqtt.connect(clientId, username, password, lwtTopic.c_str(), 0, true, LWT_DISCONNECTED, true)) {
             Serial.println("...connected.");
             ++this->numReconnects;
 
