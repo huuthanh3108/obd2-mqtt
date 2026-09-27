@@ -14,3 +14,4 @@
 # Wi-Fi credentials pushed to the device - never commit
 tools/wifi-config/wifi.json
 tools/wifi-config/settings.backup.json
+/data/settings.json
